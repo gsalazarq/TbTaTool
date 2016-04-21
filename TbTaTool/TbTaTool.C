@@ -54,7 +54,7 @@ Double_t TbTaTool::BeginTimeOneSubRun(char* file_name ) //fully works
 	 return t_begin;
 }
 
-void TbTaTool::BeginTimeForRun(int i_begin, int i_final)
+void TbTaTool::BeginTimeForRun(int i_begin, int i_final) //fullyworks
 {
 	TString variable1 = "tbegin_spill.txt";
 	char * myfile_name =root_path+ variable1 ;
@@ -66,37 +66,13 @@ void TbTaTool::BeginTimeForRun(int i_begin, int i_final)
 	TTree *tree[10000];
 	Double_t t_begin[100000];
 
-	char* file_name;
-
-	TString variable1 = "tbegin_spill.txt";
-	char * myfile_name =root_path+ variable1 ;
-	ofstream myfile (myfile_name, ios::out | ios::app);
-	if (myfile.is_open());
-
-
 	myfile <<"Unixtime outside of the first event in the spill" << endl;
 
 
-	for(int i=i_begin; i<i_final ; i++){
+	for(int i=i_begin; i<i_final ; i++){ //i number of files
 
-		f[i] = (TFile*)gROOT->GetListOfFiles()->FindObject(name_file_electrons[i]);
-		//f[i] = TFile(name_file_electrons[i]);
-		if (!f[i] || !f[i]->IsOpen()) {f[i] = new TFile(name_file_electrons[i],"READ");}
-		f[i]->GetObject("CAMACTree",tree[i]);
-		Init(tree[i]);
-
-
-		//TbTaTool(0, name_file_electrons[i]);
-		f[i] = (TFile*)gROOT->GetListOfFiles()->FindObject(name_file_electrons[i]);
-		if (!f[i] || !f[i]->IsOpen()) {
-			 f[i] = new TFile(name_file_electrons[i],"READ");           }
-
-		f[i]->GetObject("CAMACTree",tree[i]);
-		Init(tree[i]);      //fChain equal to the tree corresponding to the array_file_root[i]
-
-
+		TbTaToolRun(name_file_electrons[i],i);
 		cout << i << endl;
-
 		t_begin[i]=BeginTimeOneSubRun(name_file_electrons[i]);
 		myfile << t_begin[i]  - 1435919900 << endl;
 		cout << t_begin[i]  - 1435919900 << endl;
@@ -116,12 +92,12 @@ void TbTaTool::NumberEventsInSpillForRun(int file_inicial, int file_end ) //full
 	TTree *tree[10000];
 	Double_t t_begin[100000];
 
-	for(int i=file_inicial; i<file_end; i++){
+	for(int i=file_inicial; i<file_end; i++)
+	{
 		TbTaToolRun(name_file_electrons[i],i);
 		for(int k=1; k<7; k++)
-		{
-			cout<< i << "#entradas: "
-		<< NumberEventsInSpill(name_file_electrons[i], 6, k)<< endl;
-		}
+			{
+				cout<< i << "#entradas: "<< NumberEventsInSpill(name_file_electrons[i], 6, k)<< endl;
+			}
 	}
 }
