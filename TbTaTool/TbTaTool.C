@@ -8,7 +8,7 @@
 #include <TCanvas.h>
 TString root_path="/home/chasky/Dropbox/min_conocimiento/e45.MINERvA/tools/final_tools/TbTaTool/ThesisVersionTool/";
 
-Double_t TbTaTool::NumberEventsInSpill(char* file_name, int value_NumberSpills=0, int i)
+Double_t TbTaTool::NumberEventsInSpill(char* file_name, int value_NumberSpills=0, int r)
 {
 
 	char *condition_entry = new char[40];
@@ -17,10 +17,9 @@ Double_t TbTaTool::NumberEventsInSpill(char* file_name, int value_NumberSpills=0
 	for(int j=0; j<value_NumberSpills+1; j++){
 		sprintf(condition_entry,"In_spill > 0.5 && Spill_number == %d",j);
 		values_NumberEventsInSpill[j] = fChain->GetEntries(condition_entry);
-		cout << values_NumberEventsInSpill[j] << endl;
-	}
 
-	return values_NumberEventsInSpill[i];
+	}
+	return values_NumberEventsInSpill[r];
 
 }
 
@@ -80,6 +79,13 @@ void TbTaTool::BeginTimeForRun(int i_begin, int i_final)
 
 	for(int i=i_begin; i<i_final ; i++){
 
+		f[i] = (TFile*)gROOT->GetListOfFiles()->FindObject(name_file_electrons[i]);
+		//f[i] = TFile(name_file_electrons[i]);
+		if (!f[i] || !f[i]->IsOpen()) {f[i] = new TFile(name_file_electrons[i],"READ");}
+		f[i]->GetObject("CAMACTree",tree[i]);
+		Init(tree[i]);
+
+
 		//TbTaTool(0, name_file_electrons[i]);
 		f[i] = (TFile*)gROOT->GetListOfFiles()->FindObject(name_file_electrons[i]);
 		if (!f[i] || !f[i]->IsOpen()) {
@@ -100,29 +106,22 @@ void TbTaTool::BeginTimeForRun(int i_begin, int i_final)
 
 }
 
-void TbTaTool::main()
+void TbTaTool::NumberEventsInSpillForRun(int file_inicial, int file_end ) //fully works
 {
+	//ejemplo file_inicial debe ser el primer valor del file q vamos a trabajar
+	//ejemplo file_end será el q no se tomará en cuenta
+	//seguir el usual
+
 	TFile *f[10000];
 	TTree *tree[10000];
 	Double_t t_begin[100000];
 
-
-
-	for(int i=1; i<3+1; i++){
-
-		f[i] = (TFile*)gROOT->GetListOfFiles()->FindObject(name_file_electrons[i]);
-		if (!f[i] || !f[i]->IsOpen()) {
-			 f[i] = new TFile(name_file_electrons[i],"READ");           }
-
-		f[i]->GetObject("CAMACTree",tree[i]);
-		Init(tree[i]);      //fChain equal to the tree corresponding to the array_file_root[i]
-
-		cout<< "Valor de entradas " << i << " Numero de entradas: " << NumberEventsInSpill(name_file_electrons[i], 6, i)<< endl;
-
+	for(int i=file_inicial; i<file_end; i++){
+		TbTaToolRun(name_file_electrons[i],i);
+		for(int k=1; k<7; k++)
+		{
+			cout<< i << "#entradas: "
+		<< NumberEventsInSpill(name_file_electrons[i], 6, k)<< endl;
+		}
 	}
-
-
-
-
-
 }
