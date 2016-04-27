@@ -242,6 +242,7 @@ public :
      TBranch        *b_Good_event;   //!
 
    TbTaTool(TTree *tree=0, char* name_file=name_file_electrons[1]);
+   TbTaToolRun(char* file_name=name_file_electrons[1], int i=0);
    virtual ~TbTaTool();
    virtual Int_t    Cut(Long64_t entry);
    virtual Int_t    GetEntry(Long64_t entry);
@@ -254,13 +255,13 @@ public :
 
 #endif
 
+
+
 #ifdef TbTaTool_cxx
 TbTaTool::TbTaTool(TTree *tree, char* name_file) : fChain(0)
-{
-// if parameter tree is not specified (or zero), connect the file
-// used to generate this class and read the Tree.
+{// if parameter tree is not specified (or zero), connect the file
+  // used to generate this class and read the Tree.
 
-   //TFile *f[1000];
    if (tree == 0) {
       f = (TFile*)gROOT->GetListOfFiles()->FindObject(name_file);
       if (!f|| !f->IsOpen()) {
@@ -272,6 +273,20 @@ TbTaTool::TbTaTool(TTree *tree, char* name_file) : fChain(0)
    Init(tree);
 
 }
+
+TbTaTool::TbTaToolRun(char* file_name, int i)
+{// if parameter tree is not specified (or zero), connect the file
+  // used to generate this class and read the Tree.
+  TFile *f[10000];
+  TTree *treer[10000];
+
+  f[i] = (TFile*)gROOT->GetListOfFiles()->FindObject(file_name);
+  if (!f[i] || !f[i]->IsOpen()) {f[i] = new TFile(file_name,"READ");}
+  f[i]->GetObject("CAMACTree",treer[i]);
+  Init(treer[i]);
+
+}
+
 
 TbTaTool::~TbTaTool()
 {
