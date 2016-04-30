@@ -215,7 +215,7 @@ void TbTaTool::Loop()
 
 
 
-void TbTaTool::PlotVariableOneEnergy(int n=0, char* variable1="delta_time", char* restriction_var ="delta_time != 0", int nbins = 100, float xmin=0, float xmax=200){
+void TbTaTool::PlotVariableOneEnergy(char* variable1="delta_time", char* restriction_var ="delta_time != 0", int nbins = 100, float xmin=0, float xmax=200){
 
 	//Open the file txt for becnhmarking
 	//Open the root file
@@ -225,17 +225,20 @@ void TbTaTool::PlotVariableOneEnergy(int n=0, char* variable1="delta_time", char
 
   //Creation of Histogram
 	TH1F *hist_result1[12];
+	int m;
 
-	//TCanvas
+	TCanvas *canvas_result_[15];
+	char *label_canvas = new char[20];
+	char *title_canvas = new char[12];
+
+	char *labelYaxis = new char[60];
+
+	char *cond_histo1 = new char[80];
 
 
-	//	for(int n=5; n<6;n++)
-		//{
+		for(int n=0; n<super_limit-1;n++)
+		{
 
-
-		TCanvas *canvas_result_[15];
-		char *label_canvas = new char[20];
-		char *title_canvas = new char[12];
 
 		sprintf(label_canvas, "canvas_result_%d",n);
 		canvas_result_[n] = new TCanvas(label_canvas,label_canvas,10,10,600,400);
@@ -243,25 +246,20 @@ void TbTaTool::PlotVariableOneEnergy(int n=0, char* variable1="delta_time", char
 		canvas_result_[n]->Divide(1);
 		canvas_result_[n]->cd(1);
 
-		/*
 		//Project and plot. histname is the name of the histogram
-		char *labelYaxis = new char[60];
 		sprintf(labelYaxis,"Events/%d",nbins);
-
-
-		int m;
 		m = aenergy[n]*apolarity[n];
-		char *cond_histo1 = new char[80];
+
 		sprintf(cond_histo1," %s && energyb ==%d && polarityb ==%d",restriction_var,aenergy[n],apolarity[n]);
 
 		char *histname = new char[20];
 		sprintf(histname,"hist_result1%d",n);
 		char* label_hist_result1="Interval e39-tbegin Run2";
 		hist_result1[n] = new TH1F(histname,label_hist_result1,nbins,xmin,xmax);
-		//Condition
-		cout << "Asi nomas joven" << endl;
+
 		fChainA->Project(histname,variable1,cond_histo1);
 		hist_result1[n]->Draw();
+		hist_result1[n]->SetFillColor(kGreen);
 		hist_result1[n]->GetXaxis()->SetTitle("Time (seconds)");
 		hist_result1[n]->GetYaxis()->SetTitle(labelYaxis);
 		hist_result1[n]->Draw();
@@ -309,6 +307,7 @@ void TbTaTool::PlotVariableOneEnergy(int n=0, char* variable1="delta_time", char
 		ofstream myfile (myfile_name, ios::out | ios::app);
 		if (myfile.is_open());
 		myfile <<"Values excluded by the cut in the xmax of the histogram" << endl;
+		myfile << m << "GeV" << endl;
 		myfile <<"xmax = " << xmax << endl;
 
 
@@ -319,9 +318,8 @@ void TbTaTool::PlotVariableOneEnergy(int n=0, char* variable1="delta_time", char
 		myfile << fChainA->GetEntries(condition_entries) << endl;
 		myfile <<"####"<< endl;
 
-		*/
 
-//}
+	}
 
 }
 
