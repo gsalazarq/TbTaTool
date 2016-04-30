@@ -8,7 +8,7 @@
 #include <TStyle.h>
 #include <TCanvas.h>
 
-
+const int super_limit = 12; //the numbes of entries in the arrays of energy and polarity
 Double_t TbTaTool::NumberEventsInSpill(char* file_name, int value_NumberSpills=0, int r) //fully works
 {
 
@@ -141,7 +141,8 @@ void TbTaTool::MatchTwoPointsInterval(int i_index=0, int f_index =1, int fenergy
 
 }
 
-void TbTaTool::GenerateMatchedTimesAnalysis(/* arguments */) {
+void TbTaTool::GenerateMatchedTimesAnalysis(int plot=0)
+{
 
 	/* code */
 
@@ -164,9 +165,8 @@ void TbTaTool::GenerateMatchedTimesAnalysis(/* arguments */) {
 
 	for(int k=0; k<super_limit-1; k++)
 	{
-		cout<<"\n="<< k <<"=" << aenergy[k]*apolarity[k] << "GeV=" << endl;
-		polarityb = apolarity[k];
-		energyb = aenergy[k]*apolarity[k];
+
+		cout<<"\n="<< k <<"=" << energyb << "GeV=" << endl;
 		for(int i=aindex[k]; i < aindex[k+1]; i++)			{	//Abrir valor de tbegin
 					TbTaToolRun(name_file[i],i);
 					//Get the time of the subrun in local time
@@ -174,13 +174,28 @@ void TbTaTool::GenerateMatchedTimesAnalysis(/* arguments */) {
 					unixtimee39 = MatchTwoPoints(0, time_subrun);
 					delta_time = MatchTwoPoints(1,time_subrun);
 					file = i;
+					polarityb = apolarity[k];
+					energyb = aenergy[k];
+
 					tree_diff->Fill();
 				}
 	}
 
-
 	foutput.Write();
-	cout << "\nend." << endl;
+
+
+	//==ROOT FILE is already created ==//
+	// the plots will be made if plot=1
+	if(plot==1)
+	{
+		cout << "Ploting the Analysis for" << label << endl;
+		//Get the TTree and put it as a
+
+		cout << "\nend." << endl;
+	}
+	else{cout << "\nend." << endl;}
+
+
 }
 
 void TbTaTool::Loop()
@@ -197,3 +212,125 @@ void TbTaTool::Loop()
       // if (Cut(ientry) < 0) continue;
    }
 }
+
+
+
+void TbTaTool::PlotVariableOneEnergy(int n=0, char* variable1="delta_time", char* restriction_var ="delta_time != 0", int nbins = 100, float xmin=0, float xmax=200){
+
+	//Open the file txt for becnhmarking
+	//Open the root file
+	char* file_name="/home/gsalazarq/Dropbox/min_conocimiento/e45.MINERvA/tools/final_tools/TbTaTool/ThesisVersionTool/Results_Pions/PionsRun2analysis_tbegin_and_e39.root";
+	TbTaToolAnalysis(0,file_name);
+  //Limits of the histogram
+
+  //Creation of Histogram
+	TH1F *hist_result1[12];
+
+	//TCanvas
+
+
+	//	for(int n=5; n<6;n++)
+		//{
+
+
+		//TCanvas *cs_stacked[15];
+		char *label_canvas = new char[20];
+		char *title_canvas = new char[12];
+
+		sprintf(label_canvas, "canvas_result_%d",n);
+		TCanvas *canvas_result = new TCanvas("canvas_result","canvas_result",10,10,600,400);
+		TText T; T.SetTextFont(42); T.SetTextAlign(21);
+		canvas_result->Divide(1);
+		canvas_result->cd(1);
+
+		//Project and plot. histname is the name of the histogram
+		char *labelYaxis = new char[60];
+		sprintf(labelYaxis,"Events/%d",nbins);
+
+
+		//canvas_result[k]->Update();
+
+
+		int m;
+		m = aenergy[n]*apolarity[n];
+		char *cond_histo1 = new char[80];
+		sprintf(cond_histo1," %s && energyb ==%d && polarityb ==%d",restriction_var,aenergy[n],apolarity[n]);
+
+		char *histname = new char[20];
+		sprintf(histname,"hist_result1%d",n);
+		char* label_hist_result1="Interval e39-tbegin Run2";
+		hist_result1[n] = new TH1F(histname,label_hist_result1,nbins,xmin,xmax);
+		//Condition
+		cout << "Asi nomas joven" << endl;
+		fChainA->Project(histname,variable1,cond_histo1);
+		hist_result1[n]->Draw();
+		hist_result1[n]->GetXaxis()->SetTitle("Time (seconds)");
+		hist_result1[n]->GetYaxis()->SetTitle(labelYaxis);
+		hist_result1[n]->Draw();
+
+		char *energy_polarity_label = new char[15] ;
+		sprintf(energy_polarity_label, "%dGeV",m);
+
+		TPaveStats *ptstats = new TPaveStats(0.78,0.775,0.98,0.935,"brNDC");
+			ptstats->SetName("stats");
+			ptstats->SetBorderSize(1);
+			ptstats->SetFillColor(0);
+			ptstats->SetTextAlign(12);
+			ptstats->SetTextFont(42);
+			TText *text = ptstats->AddText(energy_polarity_label); //Name
+			text->SetTextSize(0.0068);
+			char *entries_label = new char[12];
+			Double_t entries_run =  hist_result1[n]->GetEntries();
+			sprintf(entries_label," Entries %d", entries_run);//<=========================
+			text = ptstats->AddText(entries_label);
+			char *mean_label = new char[12];
+			Float_t mean_run =  hist_result1[n]->GetMean();//<=========================
+			sprintf(mean_label," Mean %0.2f", mean_run);
+			text = ptstats->AddText(mean_label);
+			char *rms_label = new char[12];
+			Float_t rms_run =  hist_result1[n]->GetRMS(); //<=========================
+			sprintf(rms_label," RMS %0.3f", rms_run);
+			text = ptstats->AddText(rms_label);
+			ptstats->SetOptStat(1111);
+			ptstats->SetOptFit(0);
+		ptstats->Draw();
+
+
+		//Save the Canvas
+		TString canvas_file_name;
+		char *title_canvas = new char[20];
+
+		sprintf(energy_polarity_label, "%dGeV",m);
+		canvas_file_name =  root_path + variable1 +"_"+ type_label+ "_"+energy_polarity_label + ".gif";
+		canvas_result->SaveAs(canvas_file_name);
+
+		//File with data
+		char buffer [50];
+		TString temp1 = "entries_excluded_cut.txt";
+		char * myfile_name = root_path + variable1 +"_"+temp1 ;
+		ofstream myfile (myfile_name, ios::out | ios::app);
+		if (myfile.is_open());
+		myfile <<"Values excluded by the cut in the xmax of the histogram" << endl;
+		myfile <<"xmax = " << xmax << endl;
+
+
+		char *condition_entries = new char[150];
+		char *buffer_restriction = new char[100];
+		sprintf(buffer_restriction,"%s && %s >%d",restriction_var, variable1,xmax);
+		sprintf(condition_entries,"%s && %s && energyb ==%d && polarityb ==%d",variable1, buffer_restriction,aenergy[n],apolarity[n]);
+		myfile << fChainA->GetEntries(condition_entries) << endl;
+		myfile <<"####"<< endl;
+//}
+
+}
+
+/*
+void TbTaTool::PlotVariableAllEnergy(char* variable1="delta_time", char* restriction_var ="delta_time != 0" , char* label_hist_result1="Interval e39-tbegin", int nbins = 100, float xmin=0, float xmax=200)
+{
+
+
+
+
+
+}
+*/
