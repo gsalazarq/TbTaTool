@@ -233,22 +233,20 @@ void TbTaTool::PlotVariableOneEnergy(int n=0, char* variable1="delta_time", char
 		//{
 
 
-		//TCanvas *cs_stacked[15];
+		TCanvas *canvas_result_[15];
 		char *label_canvas = new char[20];
 		char *title_canvas = new char[12];
 
 		sprintf(label_canvas, "canvas_result_%d",n);
-		TCanvas *canvas_result = new TCanvas("canvas_result","canvas_result",10,10,600,400);
+		canvas_result_[n] = new TCanvas(label_canvas,label_canvas,10,10,600,400);
 		TText T; T.SetTextFont(42); T.SetTextAlign(21);
-		canvas_result->Divide(1);
-		canvas_result->cd(1);
+		canvas_result_[n]->Divide(1);
+		canvas_result_[n]->cd(1);
 
+		/*
 		//Project and plot. histname is the name of the histogram
 		char *labelYaxis = new char[60];
 		sprintf(labelYaxis,"Events/%d",nbins);
-
-
-		//canvas_result[k]->Update();
 
 
 		int m;
@@ -302,7 +300,7 @@ void TbTaTool::PlotVariableOneEnergy(int n=0, char* variable1="delta_time", char
 
 		sprintf(energy_polarity_label, "%dGeV",m);
 		canvas_file_name =  root_path + variable1 +"_"+ type_label+ "_"+energy_polarity_label + ".gif";
-		canvas_result->SaveAs(canvas_file_name);
+		canvas_result_[n]->SaveAs(canvas_file_name);
 
 		//File with data
 		char buffer [50];
@@ -320,6 +318,9 @@ void TbTaTool::PlotVariableOneEnergy(int n=0, char* variable1="delta_time", char
 		sprintf(condition_entries,"%s && %s && energyb ==%d && polarityb ==%d",variable1, buffer_restriction,aenergy[n],apolarity[n]);
 		myfile << fChainA->GetEntries(condition_entries) << endl;
 		myfile <<"####"<< endl;
+
+		*/
+
 //}
 
 }
