@@ -199,39 +199,25 @@ void TbTaTool::GenerateMatchedTimesAnalysis(int plot=0)
 
 }
 
-void TbTaTool::Loop()
-{
-   if (fChain == 0) return;
-
-   Long64_t nentries = fChain->GetEntriest();
-
-   Long64_t nbytes = 0, nb = 0;
-   for (Long64_t jentry=0; jentry<nentries;jentry++) {
-      Long64_t ientry = LoadTree(jentry);
-      if (ientry < 0) break;
-      nb = fChain->GetEntry(jentry);   nbytes += nb;
-      // if (Cut(ientry) < 0) continue;
-   }
-}
 
 
-
-void TbTaTool::PlotOneVariableOverAllEnergies(char* variable1="delta_time", char* restriction_var ="delta_time != 0", char* label_hist_result1="Interval e39-tbegin Run2", int nbins = 100, float xmin=0, float xmax=200)
+void TbTaTool::PlotOneVariableOverAllEnergies(int variable_a_analizar =0 , char* variable1="delta_time", char* restriction_var ="delta_time != 0", char* label_hist_result1 = "Time between e39 and tbegin", int nbins = 100, float xmin=0, float xmax=200)
 {
 
 	//Open the file txt for becnhmarking
 	//Open the root file
-	char* file_name="/home/gsalazarq/Dropbox/min_conocimiento/e45.MINERvA/tools/final_tools/TbTaTool/ThesisVersionTool/Results_Pions/PionsRun2analysis_tbegin_and_e39.root";
-	TbTaToolAnalysis(0,file_name);
+	char* file_name=name_file_results[variable_a_analizar];
+	TbTaToolAnalysis(0,file_name,variable_a_analizar);
   //Limits of the histogram
   //Creation of Histogram
 	TH1F *hist_result1[12];
 	int m;
 	TCanvas *canvas_result_[15];
 	char *label_canvas = new char[20];
-	char *title_canvas = new char[12];
+
 	char *labelYaxis = new char[60];
 	char *cond_histo1 = new char[80];
+	char *title_canvas = new char[80];
 
 
 		for(int n=0; n<super_limit-1;n++)
@@ -251,7 +237,7 @@ void TbTaTool::PlotOneVariableOverAllEnergies(char* variable1="delta_time", char
 			char *histname = new char[20];
 			sprintf(histname,"hist_result1%d",n);
 
-			hist_result1[n] = new TH1F(histname,label_hist_result1,nbins,xmin,xmax);
+			hist_result1[n] = new TH1F(histname,"",nbins,xmin,xmax);
 
 			fChainA->Project(histname,variable1,cond_histo1);
 			hist_result1[n]->Draw();
@@ -290,29 +276,18 @@ void TbTaTool::PlotOneVariableOverAllEnergies(char* variable1="delta_time", char
 
 			//Save the Canvas
 			TString canvas_file_name;
-			char *title_canvas = new char[20];
 
 			sprintf(energy_polarity_label, "%dGeV",m);
 			canvas_file_name =  root_path + variable1 +"_"+ type_label+ "_"+energy_polarity_label + ".gif";
+			sprintf(title_canvas,"%s for %dGeV %s", label_hist_result1, m, char_type_label);
+
+			T.DrawTextNDC(.5,.95,title_canvas);
 			canvas_result_[n]->SaveAs(canvas_file_name);
 
-			//File with data
-			char buffer [50];
-			TString temp1 = "entries_excluded_cut.txt";
-			char * myfile_name = root_path + variable1 +"_"+temp1 ;
-			ofstream myfile (myfile_name, ios::out | ios::app);
-			if (myfile.is_open());
-			myfile <<"Values excluded by the cut in the xmax of the histogram" << endl;
-			myfile << m << "GeV" << endl;
-			myfile <<"xmax = " << xmax << endl;
 
 
-			char *condition_entries = new char[150];
-			char *buffer_restriction = new char[100];
-			sprintf(buffer_restriction,"%s && %s >%d",restriction_var, variable1,xmax);
-			sprintf(condition_entries,"%s && %s && energyb ==%d && polarityb ==%d",variable1, buffer_restriction,aenergy[n],apolarity[n]);
-			myfile << fChainA->GetEntries(condition_entries) << endl;
-			myfile <<"####"<< endl;
+
+
 
 
 		}
@@ -320,18 +295,71 @@ void TbTaTool::PlotOneVariableOverAllEnergies(char* variable1="delta_time", char
 }
 
 
+TbTaTool::GetValuesHistograms(char* variable1="delta_time", char* restriction_var ="delta_time != 0", int variable_a_analizar =0 )
+{
 
-void TbTaTool::GenerateTimeProfile()
+
+		//Open the file txt for becnhmarking
+		//Open the root file
+		char* file_name=name_file_results[variable_a_analizar];
+		TbTaToolAnalysis(0,file_name,variable_a_analizar);
+	  //Limits of the histogram
+	  //Creation of Histogram
+
+		int m;
+		//File with data
+		char buffer [50];
+		TString temp1 = "entries_excluded_cut_2.txt";
+		char * myfile_name = root_path + variable1 +"_"+temp1 ;
+		ofstream myfile (myfile_name, ios::out | ios::app);
+		if (myfile.is_open());
+		myfile <<"Values excluded by the cuts" << variable1 <<"with differents limits." << endl;
+
+
+		char *condition_entries = new char[150];
+		char *buffer_restriction = new char[100];
+
+		int numero = 9;
+		int k =0;
+		Double_t limit_1, limit_2;
+
+		while(numero == 9)
+		{
+
+			cout << "Insert the bottom limit: ";
+			cin >> limit_1;
+			cout << "Insert the upper limit: ";
+			cin >> limit_2;
+			sprintf(buffer_restriction,"%s && %s > %d && %s < %d",restriction_var, variable1, limit_1, variable1 ,limit_2);
+
+
+			for(int n=0; n<super_limit-1;n++)
+			{
+
+				sprintf(condition_entries,"%s && %s && energyb ==%d && polarityb ==%d",variable1, buffer_restriction,aenergy[n],apolarity[n]);
+				myfile << "E: " << aenergy[n]*apolarity[n] << "   ";
+				myfile << fChainA->GetEntries(condition_entries) << endl;
+
+
+			}
+
+			cout <<  "Do you want to continue?, press 9: ";
+			cin >> numero;
+		}
+
+		myfile <<"####"<< endl;
+
+}
+
+
+
+void TbTaTool::GenerateTimeProfilePions()
 {
 
     TString labelTP ="_time_profile_spills.root";
 	  char * name_results = root_path + type_label + labelTP;
-
 	  TFile f_spill(name_results,"RECREATE");
 	  TTree *tree_spill = new TTree("tree_spill","Tree Spill");
-
-	  Double_t Time_spill_1b, Time_spill_2b, Time_spill_3b, Time_spill_4b, Time_spill_5b, Time_spill_6b;
-		Int_t energyb, polarityb, Spill_numberb, file;
 
 	  TBranch *b_Time_spill_1b = tree_spill->Branch("Time_spill_1b", &Time_spill_1b, "Time_spill_1b/D" );
 	  TBranch *b_Time_spill_2b = tree_spill->Branch("Time_spill_2b", &Time_spill_2b, "Time_spill_2b/D" );
@@ -339,16 +367,29 @@ void TbTaTool::GenerateTimeProfile()
 	  TBranch *b_Time_spill_4b = tree_spill->Branch("Time_spill_4b", &Time_spill_4b, "Time_spill_4b/D" );
 	  TBranch *b_Time_spill_5b = tree_spill->Branch("Time_spill_5b", &Time_spill_5b, "Time_spill_5b/D" );
 	  TBranch *b_Time_spill_6b = tree_spill->Branch("Time_spill_6b", &Time_spill_6b, "Time_spill_6b/D" );
-		TBranch *b_file = tree_spill->Branch("file", &file, "file/I");
 	  TBranch *b_Spill_numberb = tree_spill->Branch("Spill_numberb", &Spill_numberb, "Spill_numberb/I" );
+
 	  TBranch *b_energyb = tree_spill->Branch("energyb", &energyb, "energyb/I" );
 	  TBranch *b_polarityb = tree_spill->Branch("polarityb", &polarityb, "polarityb/I" );
+		TBranch *b_file = tree_spill->Branch("file", &file, "file/I");
+
+		TString labelSD ="spill_duration.root";
+		char * name_file_global = root_path + type_label + labelSD;
+
+		TFile f_global(name_file_global,"RECREATE");
+		TTree *spill_global     = new TTree("spill_global","Spill Global");
 
 
-		// Definition of variables
+		TBranch *b_duration_spill = spill_global->Branch("duration_spill", &duration_spill, "duration_spill/D" );
+		TBranch *b_mi_cycle = spill_global->Branch("mi_cycle", &mi_cycle, "mi_cycle/D" );
+
+		TBranch *b_energyb = spill_global->Branch("energyb", &energyb, "energyb/I" );
+		TBranch *b_polarityb = spill_global->Branch("polarityb", &polarityb, "polarityb/I" );
+		TBranch *b_file = spill_global->Branch("file", &file, "file/I");
 
 
 		Double_t t_o_spill_absolute;
+		Double_t temp ;
 
 
 		Double_t duration_spill_1, duration_spill_2, duration_spill_3, duration_spill_4, duration_spill_5, duration_spill_6;
@@ -363,21 +404,6 @@ void TbTaTool::GenerateTimeProfile()
 		Double_t TimeBeginSpill_[20];
 		Double_t DidTBeginWasCalculated_[20];
 		Double_t DidAbsoluteTBeginWasRecalculated_[20];
-
-		TString labelSD ="spill_duration.root";
-		char * name_file_global = root_path + type_label + labelSD;
-
-		TFile f_global(name_file_global,"RECREATE");
-		TTree *spill_global     = new TTree("spill_global","Spill Global");
-
-		Double_t duration_spill, mi_cycle, temp ;
-		Int_t value_category ;
-		Int_t category ;
-		TBranch *b_duration_spill = spill_global->Branch("duration_spill", &duration_spill, "duration_spill/D" );
-		TBranch *b_mi_cycle = spill_global->Branch("mi_cycle", &mi_cycle, "mi_cycle/D" );
-		TBranch *b_category = spill_global->Branch("category", &category, "category/I" );
-		TBranch *b_energyb = spill_global->Branch("energyb", &energyb, "energyb/I" );
-		TBranch *b_polarityb = spill_global->Branch("polarityb", &polarityb, "polarityb/I" );
 
 
 
@@ -396,6 +422,8 @@ void TbTaTool::GenerateTimeProfile()
 			for(Int_t i=aindex[i_index]; i<aindex[i_index+1]; i++)
 			{ //For() over all the root files
 				cout << i << "." << endl;
+				file = i;
+
 						TbTaToolRun(name_file[i],i);
 
 						exists_spill_1 = fChain->GetEntries("Time && In_spill>0.5 && Spill_number == 1");
@@ -610,7 +638,7 @@ void TbTaTool::GenerateTimeProfile()
 						  	// ## 1
 
 							  duration_spill =  duration_spill_1;
-							  category = 1;
+							  //category = 1;
 							  mi_cycle = 0;
 								//myfile << mi_cycle << endl;
 								//myfile4 << duration_spill << endl;
@@ -622,7 +650,7 @@ void TbTaTool::GenerateTimeProfile()
 
 									  duration_spill =  duration_spill_2;
 									  mi_cycle = t_o_spill_2 - t_o_spill_1;
-									  category = 1;
+									  //category = 1;
 									  //myfile << mi_cycle << endl;
 										//myfile4 << duration_spill << endl;
 									  spill_global->Fill();
@@ -632,7 +660,7 @@ void TbTaTool::GenerateTimeProfile()
 
 									  duration_spill =  duration_spill_2;
 									  mi_cycle = 0;
-									  category = 1;
+									  //category = 1;
 									  //myfile << mi_cycle << endl;
 										//myfile4 << duration_spill << endl;
 									  spill_global->Fill();
@@ -644,7 +672,7 @@ void TbTaTool::GenerateTimeProfile()
 
 									  duration_spill =  duration_spill_3;
 									  mi_cycle = t_o_spill_3 - t_o_spill_2;
-									  category = 1;
+									  //category = 1;
 									  //myfile << mi_cycle << endl;
 										//myfile4 << duration_spill << endl;
 									  spill_global->Fill();
@@ -654,7 +682,7 @@ void TbTaTool::GenerateTimeProfile()
 
 									  duration_spill =  duration_spill_3;
 									  mi_cycle = 0;
-									  category = 1;
+									  //category = 1;
 									  //myfile << mi_cycle << endl;
 										//myfile4 << duration_spill << endl;
 									  spill_global->Fill();
@@ -666,7 +694,7 @@ void TbTaTool::GenerateTimeProfile()
 
 									  duration_spill =  duration_spill_4;
 									  mi_cycle =  t_o_spill_4 - t_o_spill_3;
-									  category = 1;
+									  //category = 1;
 									  //myfile << mi_cycle << endl;
 										//myfile4 << duration_spill << endl;
 									  spill_global->Fill();
@@ -676,7 +704,7 @@ void TbTaTool::GenerateTimeProfile()
 
 										duration_spill =  duration_spill_4;
 									  mi_cycle = 0;
-									  category = 1;
+									  //category = 1;
 									  //myfile << mi_cycle << endl;
 										//myfile4 << duration_spill << endl;
 									  spill_global->Fill();
@@ -688,7 +716,7 @@ void TbTaTool::GenerateTimeProfile()
 
 									  duration_spill =  duration_spill_5;
 									  mi_cycle = t_o_spill_5 - t_o_spill_4;
-									  category = 1;
+									  //category = 1;
 									  //myfile << mi_cycle << endl;
 										//myfile4 << duration_spill << endl;
 									  spill_global->Fill();
@@ -698,7 +726,7 @@ void TbTaTool::GenerateTimeProfile()
 
 								  duration_spill =  duration_spill_5;
 								  mi_cycle = 0 ;
-								  category = 1;
+								  //category = 1;
 								  //myfile << mi_cycle << endl;
 									//myfile4 << duration_spill << endl;
 								  spill_global->Fill();
@@ -710,7 +738,7 @@ void TbTaTool::GenerateTimeProfile()
 
 								  duration_spill =  duration_spill_6;
 								  mi_cycle = t_o_spill_6 - t_o_spill_5;
-								  category = 1;
+								  //category = 1;
 								  //myfile << mi_cycle << endl;
 									//myfile4 << duration_spill << endl;
 								  spill_global->Fill();
@@ -720,7 +748,7 @@ void TbTaTool::GenerateTimeProfile()
 
 								  duration_spill =  duration_spill_6;
 								  mi_cycle = 0;
-								  category = 1;
+								  //category = 1;
 								  //myfile << mi_cycle << endl;
 									//myfile4 << duration_spill << endl;
 								  spill_global->Fill();
@@ -765,3 +793,199 @@ void TbTaTool::VariableArrayInsideSubRun(char* name_file, TTree *tree, Long64_t 
 		}
 		return values_VariableArrayInsideSubRun[r];
 	}
+
+
+void TbTaTool::PlotStackAllEnergies(int result=1)
+{
+
+
+      TTree *tree_spill;
+      if (tree_spill == 0) {
+         TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject(name_file_results[r]);
+         if (!f || !f->IsOpen()) {
+            f = new TFile(name_file_results[r]);
+         }
+         f->GetObject("tree_spill",tree_spill);
+
+      }
+
+
+      tree_spill->SetMakeClass(1);
+      tree_spill->SetBranchAddress("energyb", &energyb, &b_energyb);
+      tree_spill->SetBranchAddress("polarityb", &polarityb, &b_polarityb);
+      tree_spill->SetBranchAddress("file", &file, &b_file);
+      tree_spill->SetBranchAddress("Spill_numberb", &Spill_numberb, &b_Spill_numberb);
+			//tree_spill->SetBranchAddress("delta_time_e39", &delta_time_e39, &b_delta_time_e39);
+			tree_spill->SetBranchAddress("Time_spill_1b", &Time_spill_1b, &b_Time_spill_1b);
+			tree_spill->SetBranchAddress("Time_spill_2b", &Time_spill_2b, &b_Time_spill_2b);
+			tree_spill->SetBranchAddress("Time_spill_3b", &Time_spill_3b, &b_Time_spill_3b);
+			tree_spill->SetBranchAddress("Time_spill_4b", &Time_spill_4b, &b_Time_spill_4b);
+			tree_spill->SetBranchAddress("Time_spill_5b", &Time_spill_5b, &b_Time_spill_5b);
+			tree_spill->SetBranchAddress("Time_spill_6b", &Time_spill_6b, &b_Time_spill_6b);
+
+
+
+			int nbins = 100;
+			int nfiles=6; //number of the bins
+			float xmin=-0.5,xmax=5; //Limits of the histogram
+
+			TH1F *hist_spill_1[12];
+			TH1F *hist_spill_2[12];
+			TH1F *hist_spill_3[12];
+			TH1F *hist_spill_4[12];
+			TH1F *hist_spill_5[12];
+			TH1F *hist_spill_6[12];
+			char *histname = new char[15];
+			char *histname2 = new char[15];
+			char *histname3 = new char[15];
+			char *histname4 = new char[15];
+			char *histname5 = new char[15];
+			char *histname6 = new char[15];
+
+			char *label = new char[15];
+			char *label2 = new char[15];
+			char *file_label = new char[10];
+			//char *energy_polarity_label= new char[10];
+			char *label_canvas = new char[10];
+
+			TCanvas *cs_stacked[12];
+
+
+
+			//a is the number of files that you want to create 16 in this case
+			int energy_value = 8 , polarity_value = -1;
+			//char *energy_polarity_label[8];
+			char *condition_entries = new char[100];
+
+			int energy_t;
+			int polarity_t;
+
+
+			char *cond_histo1 = new char[60];
+				char *cond_histo2 = new char[60];
+				char *cond_histo3 = new char[60];
+				char *cond_histo4 = new char[60];
+				char *cond_histo5 = new char[60];
+				char *cond_histo6 = new char[60];
+
+
+				char *energy_polarity_label = new char[15] ;
+				char *title_canvas = new char[40];
+				int m;
+				TString myfile_name8;
+
+
+	for(int a = 0; a<super_limit-1 ; a++){
+
+			 sprintf(cond_histo1,"Time_spill_1b != -404 && energyb ==%d && polarityb ==%d",aenergy[a],apolarity[a]);
+			 sprintf(cond_histo2,"Time_spill_2b != -404 && energyb ==%d && polarityb ==%d",aenergy[a],apolarity[a]);
+			 sprintf(cond_histo3,"Time_spill_3b != -404 && energyb ==%d && polarityb ==%d",aenergy[a],apolarity[a]);
+			 sprintf(cond_histo4,"Time_spill_4b != -404 && energyb ==%d && polarityb ==%d",aenergy[a],apolarity[a]);
+			 sprintf(cond_histo5,"Time_spill_5b != -404 && energyb ==%d && polarityb ==%d",aenergy[a],apolarity[a]);
+			 sprintf(cond_histo6,"Time_spill_6b != -404 && energyb ==%d && polarityb ==%d",aenergy[a],apolarity[a]);
+
+			  //				sprintf(file_label,"file_%d_",a);
+				sprintf(histname,"hist_spill_1%d",a);
+				sprintf(histname2,"hist_spill_2%d",a);
+				sprintf(histname3,"hist_spill_3%d",a);
+				sprintf(histname4,"hist_spill_4%d",a);
+				sprintf(histname5,"hist_spill_5%d",a);
+				sprintf(histname6,"hist_spill_6%d",a);
+
+				sprintf(label_canvas, "cs_stacked_%d",a);
+
+
+				hist_spill_1[a] = new TH1F(histname,"Spill #1",nbins,xmin,xmax);
+				hist_spill_2[a] = new TH1F(histname2,"Spill #2",nbins,xmin,xmax);
+				hist_spill_3[a] = new TH1F(histname3,"Spill #3",nbins,xmin,xmax);
+				hist_spill_4[a] = new TH1F(histname4,"Spill #4",nbins,xmin,xmax);
+				hist_spill_5[a] = new TH1F(histname5,"Spill #5",nbins,xmin,xmax);
+				hist_spill_6[a] = new TH1F(histname6,"Spill #6",nbins,xmin,xmax);
+
+				THStack *hs_spill_stack = new THStack("hs_spill_stack",""); //  Defining the THStack histogram
+				// ====== Ploting the variables / Defining the histograms and attaching them into THStack  =========//
+				 //1
+				 tree_spill->Project(histname,"Time_spill_1b", cond_histo1);
+				 hist_spill_1[a]->SetFillColor(kRed);
+				 hs_spill_stack->Add(hist_spill_1[a]);
+				 //2
+				 tree_spill->Project(histname2,"Time_spill_2b", cond_histo2);
+			   hist_spill_2[a]->SetFillColor(kBlue);
+				 hs_spill_stack->Add(hist_spill_2[a]);
+				 //3
+				 tree_spill->Project(histname3,"Time_spill_3b", cond_histo3);
+				 hist_spill_3[a]->SetFillColor(kYellow);
+				 hs_spill_stack->Add(hist_spill_3[a]);
+				 //4
+				 tree_spill->Project(histname4,"Time_spill_4b", cond_histo4);
+
+				 hist_spill_4[a]->SetFillColor(kGreen);
+				 hs_spill_stack->Add(hist_spill_4[a]);
+				 //5
+				 tree_spill->Project(histname5,"Time_spill_5b", cond_histo5);
+				 hist_spill_5[a]->SetFillColor(kOrange);
+				 hs_spill_stack->Add(hist_spill_5[a]);
+				 //6
+				 tree_spill->Project(histname6,"Time_spill_6b", cond_histo6);
+				 hist_spill_6[a]->SetFillColor(kBlack);
+				 hs_spill_stack->Add(hist_spill_6[a]);
+
+				 // ========= Defining the histograms and attaching them into THStack  =========//
+
+				 cs_stacked[a] = new TCanvas(label_canvas,label_canvas,10,10,700,400);
+				 TText T; T.SetTextFont(42); T.SetTextAlign(21);
+				 cs_stacked[a]->Divide(1);
+				 cs_stacked[a]->cd(1);
+
+				 hs_spill_stack->Draw();
+				 hs_spill_stack->GetXaxis()->SetTitle("Time (seconds)");
+				 hs_spill_stack->GetYaxis()->SetTitle("Events/100");
+				 hs_spill_stack->Draw();
+
+
+				 Double_t xl1=.80, yl1=0.40, xl2=xl1+.15, yl2=yl1+.325; // Set the X Axis title, value, etc
+				 // x position, y position, x ancho, y ancho
+				 TLegend *leg = new TLegend(xl1,yl1,xl2,yl2); // Legend
+					 leg->SetHeader("Spill number");
+					 leg->AddEntry(hist_spill_1[a],"#1","f");
+					 leg->AddEntry(hist_spill_2[a],"#2","f");
+					 leg->AddEntry(hist_spill_3[a],"#3","f");
+					 leg->AddEntry(hist_spill_4[a],"#4","f");
+					 leg->AddEntry(hist_spill_5[a],"#5","f");
+					 leg->AddEntry(hist_spill_6[a],"#6","f");
+					 leg->Draw();
+
+					char *variable_stacked_spill = "StackedSpill_";
+
+					m= aenergy[a]*apolarity[a];
+					sprintf(energy_polarity_label, "Energy_%dGeV", m);
+					myfile_name8=  root_path + variable_stacked_spill + "_"+ type_label +"_"+energy_polarity_label + ".gif";
+
+
+					sprintf(title_canvas,"Time Profile for %dGeV Pions", m);
+				 	T.DrawTextNDC(.5,.95,title_canvas);
+					cs_stacked[a]->SaveAs(myfile_name8);
+
+				} // end  for(int a = 0; a<super_limit-1 ; a++){
+
+
+}
+
+
+
+void TbTaTool::Main(int o=0)
+{
+   if(o==0){GenerateTimeProfilePions();}
+	 else{ }
+
+	 PlotOneVariableOverAllEnergies("duration_spill", "duration_spill != 0", "MI's Spill Duration Run2",100, 3, 4.5,3 );
+	 PlotOneVariableOverAllEnergies("mi_cycle", "mi_cycle !=0 && mi_cycle <62", "Spill frequency", int 100, 0, 62, 3);
+
+
+	 ////category = 1;
+	//	mi_cycle = 0;
+//									Time_spill_1b = -1; Time_spill_2b = -1; Time_spill_3b = -1;
+	//									Time_spill_4b = -1; Time_spill_5b = -1; Time_spill_6b = -1;
+
+
+}
