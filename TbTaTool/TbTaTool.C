@@ -9,13 +9,14 @@
 #include <TCanvas.h>
 
 const int super_limit = 12; //the numbes of entries in the arrays of energy and polarity
-Double_t TbTaTool::NumberEventsInSpill(char* file_name, int value_NumberSpills=0, int r) //fully works
+Long64_t nbytes = 0, nb = 0;
+Double_t TbTaTool::NumberEventsInSpill(char* file_name, int value_NumberSpills=6, int r) //fully works
 {
 
 	char *condition_entry = new char[40];
-	Double_t values_NumberEventsInSpill[6];
+	Double_t values_NumberEventsInSpill[20];
 
-	for(int j=0; j<value_NumberSpills+1; j++){
+	for(int j=1; j<=value_NumberSpills; j++){
 		sprintf(condition_entry,"In_spill > 0.5 && Spill_number == %d",j);
 		values_NumberEventsInSpill[j] = fChain->GetEntries(condition_entry);
 
@@ -215,121 +216,435 @@ void TbTaTool::Loop()
 
 
 
-void TbTaTool::PlotVariableOneEnergy(char* variable1="delta_time", char* restriction_var ="delta_time != 0", int nbins = 100, float xmin=0, float xmax=200){
+void TbTaTool::PlotOneVariableOverAllEnergies(char* variable1="delta_time", char* restriction_var ="delta_time != 0", char* label_hist_result1="Interval e39-tbegin Run2", int nbins = 100, float xmin=0, float xmax=200)
+{
 
 	//Open the file txt for becnhmarking
 	//Open the root file
 	char* file_name="/home/gsalazarq/Dropbox/min_conocimiento/e45.MINERvA/tools/final_tools/TbTaTool/ThesisVersionTool/Results_Pions/PionsRun2analysis_tbegin_and_e39.root";
 	TbTaToolAnalysis(0,file_name);
   //Limits of the histogram
-
   //Creation of Histogram
 	TH1F *hist_result1[12];
 	int m;
-
 	TCanvas *canvas_result_[15];
 	char *label_canvas = new char[20];
 	char *title_canvas = new char[12];
-
 	char *labelYaxis = new char[60];
-
 	char *cond_histo1 = new char[80];
 
 
 		for(int n=0; n<super_limit-1;n++)
 		{
+			sprintf(label_canvas, "canvas_result_%d",n);
+			canvas_result_[n] = new TCanvas(label_canvas,label_canvas,10,10,600,400);
+			TText T; T.SetTextFont(42); T.SetTextAlign(21);
+			canvas_result_[n]->Divide(1);
+			canvas_result_[n]->cd(1);
+
+			//Project and plot. histname is the name of the histogram
+			sprintf(labelYaxis,"Events/%d",nbins);
+			m = aenergy[n]*apolarity[n];
+
+			sprintf(cond_histo1," %s && energyb ==%d && polarityb ==%d",restriction_var,aenergy[n],apolarity[n]);
+
+			char *histname = new char[20];
+			sprintf(histname,"hist_result1%d",n);
+
+			hist_result1[n] = new TH1F(histname,label_hist_result1,nbins,xmin,xmax);
+
+			fChainA->Project(histname,variable1,cond_histo1);
+			hist_result1[n]->Draw();
+			hist_result1[n]->SetFillColor(kGreen);
+			hist_result1[n]->GetXaxis()->SetTitle("Time (seconds)");
+			hist_result1[n]->GetYaxis()->SetTitle(labelYaxis);
+			hist_result1[n]->Draw();
+
+			char *energy_polarity_label = new char[15] ;
+			sprintf(energy_polarity_label, "%dGeV",m);
+
+			TPaveStats *ptstats = new TPaveStats(0.78,0.775,0.98,0.935,"brNDC");
+				ptstats->SetName("stats");
+				ptstats->SetBorderSize(1);
+				ptstats->SetFillColor(0);
+				ptstats->SetTextAlign(12);
+				ptstats->SetTextFont(42);
+				TText *text = ptstats->AddText(energy_polarity_label); //Name
+				text->SetTextSize(0.0068);
+				char *entries_label = new char[12];
+				Double_t entries_run =  hist_result1[n]->GetEntries();
+				sprintf(entries_label," Entries %d", entries_run);//<=========================
+				text = ptstats->AddText(entries_label);
+				char *mean_label = new char[12];
+				Float_t mean_run =  hist_result1[n]->GetMean();//<=========================
+				sprintf(mean_label," Mean %0.2f", mean_run);
+				text = ptstats->AddText(mean_label);
+				char *rms_label = new char[12];
+				Float_t rms_run =  hist_result1[n]->GetRMS(); //<=========================
+				sprintf(rms_label," RMS %0.3f", rms_run);
+				text = ptstats->AddText(rms_label);
+				ptstats->SetOptStat(1111);
+				ptstats->SetOptFit(0);
+			ptstats->Draw();
 
 
-		sprintf(label_canvas, "canvas_result_%d",n);
-		canvas_result_[n] = new TCanvas(label_canvas,label_canvas,10,10,600,400);
-		TText T; T.SetTextFont(42); T.SetTextAlign(21);
-		canvas_result_[n]->Divide(1);
-		canvas_result_[n]->cd(1);
+			//Save the Canvas
+			TString canvas_file_name;
+			char *title_canvas = new char[20];
 
-		//Project and plot. histname is the name of the histogram
-		sprintf(labelYaxis,"Events/%d",nbins);
-		m = aenergy[n]*apolarity[n];
+			sprintf(energy_polarity_label, "%dGeV",m);
+			canvas_file_name =  root_path + variable1 +"_"+ type_label+ "_"+energy_polarity_label + ".gif";
+			canvas_result_[n]->SaveAs(canvas_file_name);
 
-		sprintf(cond_histo1," %s && energyb ==%d && polarityb ==%d",restriction_var,aenergy[n],apolarity[n]);
-
-		char *histname = new char[20];
-		sprintf(histname,"hist_result1%d",n);
-		char* label_hist_result1="Interval e39-tbegin Run2";
-		hist_result1[n] = new TH1F(histname,label_hist_result1,nbins,xmin,xmax);
-
-		fChainA->Project(histname,variable1,cond_histo1);
-		hist_result1[n]->Draw();
-		hist_result1[n]->SetFillColor(kGreen);
-		hist_result1[n]->GetXaxis()->SetTitle("Time (seconds)");
-		hist_result1[n]->GetYaxis()->SetTitle(labelYaxis);
-		hist_result1[n]->Draw();
-
-		char *energy_polarity_label = new char[15] ;
-		sprintf(energy_polarity_label, "%dGeV",m);
-
-		TPaveStats *ptstats = new TPaveStats(0.78,0.775,0.98,0.935,"brNDC");
-			ptstats->SetName("stats");
-			ptstats->SetBorderSize(1);
-			ptstats->SetFillColor(0);
-			ptstats->SetTextAlign(12);
-			ptstats->SetTextFont(42);
-			TText *text = ptstats->AddText(energy_polarity_label); //Name
-			text->SetTextSize(0.0068);
-			char *entries_label = new char[12];
-			Double_t entries_run =  hist_result1[n]->GetEntries();
-			sprintf(entries_label," Entries %d", entries_run);//<=========================
-			text = ptstats->AddText(entries_label);
-			char *mean_label = new char[12];
-			Float_t mean_run =  hist_result1[n]->GetMean();//<=========================
-			sprintf(mean_label," Mean %0.2f", mean_run);
-			text = ptstats->AddText(mean_label);
-			char *rms_label = new char[12];
-			Float_t rms_run =  hist_result1[n]->GetRMS(); //<=========================
-			sprintf(rms_label," RMS %0.3f", rms_run);
-			text = ptstats->AddText(rms_label);
-			ptstats->SetOptStat(1111);
-			ptstats->SetOptFit(0);
-		ptstats->Draw();
+			//File with data
+			char buffer [50];
+			TString temp1 = "entries_excluded_cut.txt";
+			char * myfile_name = root_path + variable1 +"_"+temp1 ;
+			ofstream myfile (myfile_name, ios::out | ios::app);
+			if (myfile.is_open());
+			myfile <<"Values excluded by the cut in the xmax of the histogram" << endl;
+			myfile << m << "GeV" << endl;
+			myfile <<"xmax = " << xmax << endl;
 
 
-		//Save the Canvas
-		TString canvas_file_name;
-		char *title_canvas = new char[20];
-
-		sprintf(energy_polarity_label, "%dGeV",m);
-		canvas_file_name =  root_path + variable1 +"_"+ type_label+ "_"+energy_polarity_label + ".gif";
-		canvas_result_[n]->SaveAs(canvas_file_name);
-
-		//File with data
-		char buffer [50];
-		TString temp1 = "entries_excluded_cut.txt";
-		char * myfile_name = root_path + variable1 +"_"+temp1 ;
-		ofstream myfile (myfile_name, ios::out | ios::app);
-		if (myfile.is_open());
-		myfile <<"Values excluded by the cut in the xmax of the histogram" << endl;
-		myfile << m << "GeV" << endl;
-		myfile <<"xmax = " << xmax << endl;
+			char *condition_entries = new char[150];
+			char *buffer_restriction = new char[100];
+			sprintf(buffer_restriction,"%s && %s >%d",restriction_var, variable1,xmax);
+			sprintf(condition_entries,"%s && %s && energyb ==%d && polarityb ==%d",variable1, buffer_restriction,aenergy[n],apolarity[n]);
+			myfile << fChainA->GetEntries(condition_entries) << endl;
+			myfile <<"####"<< endl;
 
 
-		char *condition_entries = new char[150];
-		char *buffer_restriction = new char[100];
-		sprintf(buffer_restriction,"%s && %s >%d",restriction_var, variable1,xmax);
-		sprintf(condition_entries,"%s && %s && energyb ==%d && polarityb ==%d",variable1, buffer_restriction,aenergy[n],apolarity[n]);
-		myfile << fChainA->GetEntries(condition_entries) << endl;
-		myfile <<"####"<< endl;
-
-
-	}
+		}
 
 }
 
-/*
-void TbTaTool::PlotVariableAllEnergy(char* variable1="delta_time", char* restriction_var ="delta_time != 0" , char* label_hist_result1="Interval e39-tbegin", int nbins = 100, float xmin=0, float xmax=200)
+
+
+void TbTaTool::GenerateTimeProfile()
 {
 
+    TString label ="_time_profile_spills.root";
+	  char * name_results = root_path + type_label + label;
+
+	  TFile f_spill(name_results,"RECREATE");
+	  TTree *tree_spill = new TTree("tree_spill","Tree Spill");
+
+	  Double_t Time_spill_1b, Time_spill_2b, Time_spill_3b, Time_spill_4b, Time_spill_5b, Time_spill_6b;
+		Int_t energyb, polarityb, Spill_numberb, file;
+
+	  TBranch *b_Time_spill_1b = tree_spill->Branch("Time_spill_1b", &Time_spill_1b, "Time_spill_1b/D" );
+	  TBranch *b_Time_spill_2b = tree_spill->Branch("Time_spill_2b", &Time_spill_2b, "Time_spill_2b/D" );
+	  TBranch *b_Time_spill_3b = tree_spill->Branch("Time_spill_3b", &Time_spill_3b, "Time_spill_3b/D" );
+	  TBranch *b_Time_spill_4b = tree_spill->Branch("Time_spill_4b", &Time_spill_4b, "Time_spill_4b/D" );
+	  TBranch *b_Time_spill_5b = tree_spill->Branch("Time_spill_5b", &Time_spill_5b, "Time_spill_5b/D" );
+	  TBranch *b_Time_spill_6b = tree_spill->Branch("Time_spill_6b", &Time_spill_6b, "Time_spill_6b/D" );
+		TBranch *b_file = tree_spill->Branch("file", &file, "file/I");
+	  TBranch *b_Spill_numberb = tree_spill->Branch("Spill_numberb", &Spill_numberb, "Spill_numberb/I" );
+	  TBranch *b_energyb = tree_spill->Branch("energyb", &energyb, "energyb/I" );
+	  TBranch *b_polarityb = tree_spill->Branch("polarityb", &polarityb, "polarityb/I" );
+
+
+		// Definition of variables
+
+
+		Double_t t_o_spill_absolute;
+
+
+		Double_t Time_spill, Time_spill_1, Time_spill_2, Time_spill_3, Time_spill_4, Time_spill_5, Time_spill_6;
+		Double_t Time_spill_7, Time_spill_8, Time_spill_9, Time_spill_10, Time_spill_11;
+
+		Double_t interval_between_spills = 60.53333333;
+
+		Double_t TimeBeginSpill_[20];
+		Double_t DidTBeginWasCalculated_[20];
+		Double_t DidAbsoluteTBeginWasRecalculated_[20];
+
+    TFile *f[10000];
+    TTree *tree[10000];
+    Double_t t_begin[100000];
+		Double_t exists_spill[20];
 
 
 
+		for(int i_index=0; i_index<2; i_index++)
+		{
+			polarityb = apolarity[i_index];
+			energyb = aenergy[i_index];
 
+
+			for(Int_t i=aindex[i_index]; i<aindex[i_index+1]; i++)
+			{ //For() over all the root files
+				cout << i << ".";
+						TbTaToolRun(name_file[i],i);
+
+	          //k is the spill number for pions (1-6), electrons (1-11)
+						for(int k=1; k<=value_number_spills;k++)
+						{
+							exists_spill[k]=NumberEventsInSpill(name_file[i], 6, k);
+						}
+
+	          // ================= LOOP 0 : Begin of the Variable Time and =================== //
+
+	          if (fChain == 0) return; Long64_t nentries = fChain->GetEntries(); Long64_t nbytes = 0, nb = 0;
+
+						for(int y=1; y<=value_number_spills; y++)
+						{
+							TimeBeginSpill_[y]=-404;
+							DidTBeginWasCalculated_[y]=-404;
+							//code_spill_X == DidAbsoluteTBeginWasRecalculated
+							DidAbsoluteTBeginWasRecalculated_[y]=-404;
+						}
+
+
+						// ================= Get the timestamp of the first values for all the spills  =================== //
+
+						t_begin[i] = MatchTwoPoints(0,BeginTimeOneSubRun(name_file[i]));
+
+						for(int s=1; s <=value_number_spills; s++ )
+						{
+							TimeBeginSpill_[s] = VariableArrayInsideSubRun(name_file[i], fChain, nentries,  t_begin[i], value_number_spills, s, 0);
+							DidTBeginWasCalculated_[s] = VariableArrayInsideSubRun(name_file[i], fChain, nentries,  t_begin[i],value_number_spills, s,1);
+						}
+
+					cout << ".";
+					t_o_spill_absolute = 0;
+
+				// = choose the absolute time considering the actual first spill that exist
+				if( TimeBeginSpill_[1] != -404 ){ t_o_spill_absolute =  TimeBeginSpill_[1]; DidAbsoluteTBeginWasRecalculated_[1] =100;  }
+					else if( TimeBeginSpill_[2] != -404 ){ t_o_spill_absolute =  TimeBeginSpill_[2]; DidAbsoluteTBeginWasRecalculated_[2] =100; }
+					else if( TimeBeginSpill_[3] != -404 ){ t_o_spill_absolute =  TimeBeginSpill_[3]; DidAbsoluteTBeginWasRecalculated_[3] =100; }
+					else if( TimeBeginSpill_[4] != -404 ){ t_o_spill_absolute =  TimeBeginSpill_[4]; DidAbsoluteTBeginWasRecalculated_[4] =100; }
+					else if( TimeBeginSpill_[5] != -404 ){ t_o_spill_absolute =  TimeBeginSpill_[5]; DidAbsoluteTBeginWasRecalculated_[5] =100; }
+					else if( TimeBeginSpill_[6] != -404 ){ t_o_spill_absolute =  TimeBeginSpill_[6]; DidAbsoluteTBeginWasRecalculated_[6] =100; }
+
+ 				// Cut the spills // ======================
+
+			  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+			    Long64_t ientry = LoadTree(jentry);		    //if (ientry < 0) break;
+			    nb = fChain->GetEntry(jentry);   nbytes += nb;
+					//Conditions for Spill has actual values
+
+			    Time_spill_1b = -404; Time_spill_2b = -404; Time_spill_3b = -404;
+			    Time_spill_4b = -404; Time_spill_5b = -404; Time_spill_6b = -404;
+
+
+	      	if (In_spill > 0.5 )
+					{
+	          if (Spill_number == 1 && exists_spill[1] != 0  )
+							{
+
+	                  Time_spill_1 = (Double_t) Time -t_begin[i];
+	                	Time_spill_1b = (Double_t) Time  -t_o_spill_absolute - t_begin[i] ;
+	                  Spill_numberb = 1;
+	                  tree_spill->Fill();
+
+	            }
+
+	          else if (Spill_number == 2 && exists_spill[2]!= 0 )
+	            {
+
+										if(DidAbsoluteTBeginWasRecalculated_[1] != -404 ){
+
+										Time_spill_2= (Double_t) Time -t_begin[i];
+										//Time_spill_2b = (Double_t) Time - interval_between_spills*1 - t_begin[i] - t_o_spill_absolute;
+										Time_spill_2b = 800;
+
+										Spill_numberb = 2;
+
+	                  tree_spill->Fill();
+
+
+										}
+										else{
+
+											Time_spill_2= (Double_t) Time -t_begin[i];
+		                  Time_spill_2b = (Double_t) Time - interval_between_spills*0 - t_begin[i] - t_o_spill_absolute;
+		                  Spill_numberb = 2;
+		                  tree_spill->Fill();
+										}
+	            }
+
+	          else if (Spill_number == 3 && exists_spill[3] != 0 )
+	            {
+										if(DidAbsoluteTBeginWasRecalculated_[1] != -404){
+
+											  Time_spill_3= (Double_t) Time -t_begin[i];
+			                  //Time_spill_3b = (Double_t) Time  - interval_between_spills*2 - t_begin[i] - t_o_spill_absolute;
+												Time_spill_3b = 700;
+			                  Spill_numberb = 3;
+			                  tree_spill->Fill();
+										}
+										else if(DidAbsoluteTBeginWasRecalculated_[2] != -404){
+
+											  Time_spill_3= (Double_t) Time -t_begin[i];
+			                  Time_spill_3b = (Double_t) Time  - interval_between_spills*1 - t_begin[i]- t_o_spill_absolute;
+												Spill_numberb = 3;
+			                  tree_spill->Fill();
+
+										}
+										else{
+
+											  Time_spill_3= (Double_t) Time -t_begin[i];
+			                  Time_spill_3b = (Double_t) Time  - interval_between_spills*0 - t_begin[i]- t_o_spill_absolute;
+			                  Spill_numberb = 3;
+			                  tree_spill->Fill();
+										}
+	             }
+
+	           else if (Spill_number == 4 && exists_spill[4] != 0 )
+	           {
+
+									 if(DidAbsoluteTBeginWasRecalculated_[1] != -404){
+
+										    Time_spill_4= (Double_t) Time -t_begin[i];
+			                  Time_spill_4b = (Double_t) Time - interval_between_spills*3 - t_begin[i] - t_o_spill_absolute;
+			                  Spill_numberb = 4;
+			                  tree_spill->Fill();
+									 }
+									 else if(DidAbsoluteTBeginWasRecalculated_[2] != -404){
+
+										    Time_spill_4= (Double_t) Time -t_begin[i];
+			                  Time_spill_4b = (Double_t) Time - interval_between_spills*2 - t_begin[i]- t_o_spill_absolute;
+			                  Spill_numberb = 4;
+			                  tree_spill->Fill();
+									 }
+									 else if(DidAbsoluteTBeginWasRecalculated_[3] != -404){
+
+										    Time_spill_4= (Double_t) Time -t_begin[i];
+			                  Time_spill_4b = (Double_t) Time - interval_between_spills*1 - t_begin[i]- t_o_spill_absolute;
+			                  Spill_numberb = 4;
+			                  tree_spill->Fill();
+									 }
+									 else{
+										    Time_spill_4= (Double_t) Time -t_begin[i];
+			                  Time_spill_4b = (Double_t) Time - interval_between_spills*0 - t_begin[i]- t_o_spill_absolute;
+			                  Spill_numberb = 4;
+			                  tree_spill->Fill();
+									 }
+	          	}
+
+	          else if (Spill_number == 5 && exists_spill[5] != 0 )
+	          {
+
+									if(DidAbsoluteTBeginWasRecalculated_[1] != -404){
+
+										  Time_spill_5= (Double_t) Time -t_begin[i];
+			                Time_spill_5b = (Double_t) Time  - interval_between_spills*4 - t_begin[i]- t_o_spill_absolute;
+			                Spill_numberb = 5;
+			                tree_spill->Fill();
+									}
+									else if(DidAbsoluteTBeginWasRecalculated_[2] != -404){
+
+										  Time_spill_5= (Double_t) Time -t_begin[i];
+			                Time_spill_5b = (Double_t) Time  - interval_between_spills*3 - t_begin[i]- t_o_spill_absolute;
+			                Spill_numberb = 5;
+			                tree_spill->Fill();
+									}
+									else if(DidAbsoluteTBeginWasRecalculated_[3] != -404){
+										  Time_spill_5= (Double_t) Time -t_begin[i];
+			                Time_spill_5b = (Double_t) Time  - interval_between_spills*2 - t_begin[i]- t_o_spill_absolute;
+			                Spill_numberb = 5;
+			                tree_spill->Fill();
+
+									}
+									else if(DidAbsoluteTBeginWasRecalculated_[4] != -404){
+										  Time_spill_5= (Double_t) Time -t_begin[i];
+			                Time_spill_5b = (Double_t) Time  - interval_between_spills*1 - t_begin[i]- t_o_spill_absolute;
+			                Spill_numberb = 5;
+			                tree_spill->Fill();
+									}
+									else {
+
+										  Time_spill_5= (Double_t) Time -t_begin[i];
+			                Time_spill_5b = (Double_t) Time  - interval_between_spills*0 - t_begin[i]- t_o_spill_absolute;
+			                Spill_numberb = 5;
+			                tree_spill->Fill();
+									}
+	          }
+
+	         else if (Spill_number == 6 && exists_spill[6] != 0 )
+	         {
+
+
+								 if(DidAbsoluteTBeginWasRecalculated_[1] != -404){
+									 Time_spill_6= (Double_t) Time -t_begin[i];
+		               Time_spill_6b = (Double_t) Time - interval_between_spills*5  - t_begin[i]- t_o_spill_absolute;
+		               Spill_numberb = 6;
+		               tree_spill->Fill();
+
+								 }
+								 else if(DidAbsoluteTBeginWasRecalculated_[2] != -404){
+									 Time_spill_6= (Double_t) Time -t_begin[i];
+		               Time_spill_6b = (Double_t) Time - interval_between_spills*4  - t_begin[i]- t_o_spill_absolute;
+		               Spill_numberb = 6;
+		               tree_spill->Fill();
+								 }
+								 else if(DidAbsoluteTBeginWasRecalculated_[3] != -404){
+
+									 Time_spill_6= (Double_t) Time -t_begin[i];
+		               Time_spill_6b = (Double_t) Time - interval_between_spills*3  - t_begin[i]- t_o_spill_absolute;
+		               Spill_numberb = 6;
+		               tree_spill->Fill();
+								 }
+								 else if(DidAbsoluteTBeginWasRecalculated_[4] != -404){
+
+									 Time_spill_6= (Double_t) Time -t_begin[i];
+		               Time_spill_6b = (Double_t) Time - interval_between_spills*2  - t_begin[i]- t_o_spill_absolute;
+		               Spill_numberb = 6;
+		               tree_spill->Fill();
+								 }
+								 else if(DidAbsoluteTBeginWasRecalculated_[5] != -404){
+
+									 Time_spill_6= (Double_t) Time -t_begin[i];
+		               Time_spill_6b = (Double_t) Time - interval_between_spills*1  - t_begin[i]- t_o_spill_absolute;
+		               Spill_numberb = 6;
+		               tree_spill->Fill();
+								 }
+								 else {
+
+									 Time_spill_6= (Double_t) Time -t_begin[i];
+		               Time_spill_6b = (Double_t) Time - interval_between_spills*0  - t_begin[i]- t_o_spill_absolute;
+		               Spill_numberb = 6;
+		               tree_spill->Fill();
+
+								 }
+	         		} // end of else if (Spill_number == 6 && exists_spill_6 != 0 )
+
+					} // end of:  if (In_spill > 0.5 )
+			 	}//end of: for (Long64_t jentry=0; jentry<nentries;jentry++) End of Cut
+
+			cout << "." << endl;
+			file = i ;
+
+	  	}//End For 2GeV ============================
+		} // end For for all the indexes
+
+f_spill.Write();
 }
-*/
+
+
+void TbTaTool::VariableArrayInsideSubRun(char* name_file, TTree *tree, Long64_t nentries, Double_t t_begin, int value_number_spills, int SpillNumber=1, int r=0 )
+{
+	Double_t values_VariableArrayInsideSubRun[5];
+	Double_t a,b;
+
+	for (Long64_t jentry=0; jentry<nentries;jentry++)
+		{
+		 Long64_t ientry = LoadTree(jentry);                //if (ientry < 0) break;
+		 nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+					if (In_spill > 0.5 )
+					{
+						if (Spill_number == SpillNumber  && NumberEventsInSpill(name_file, 6, SpillNumber) != 0     )
+						{
+							values_VariableArrayInsideSubRun[0] = Time - t_begin;;
+							//TimeBeginSpill_[y] == values_VariableArrayInsideSubRun[0] = Time - t_begin;;
+							values_VariableArrayInsideSubRun[1] = 1;
+							//DidTBeginWasCalculated == values_VariableArrayInsideSubRun[1]
+							break ;
+						}
+					}
+		}
+		return values_VariableArrayInsideSubRun[r];
+	}
