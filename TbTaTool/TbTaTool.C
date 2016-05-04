@@ -355,7 +355,7 @@ void TbTaTool::PlotOneVariableOverAllEnergies(int type_tree=0, int file_resultad
 			else if(recursive ==5){p=n+50;}
 			else if(recursive ==6){p=n+60;}
 
-			sprintf(label_canvas, "canvas_result_%d",n);
+			sprintf(label_canvas, "canvas_result_%d",p);
 			canvas_result_[p] = new TCanvas(label_canvas,label_canvas,10,10,600,400);
 			TText T; T.SetTextFont(42); T.SetTextAlign(21);
 			canvas_result_[p]->Divide(1);
