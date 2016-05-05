@@ -10,6 +10,9 @@
 
 #include <ctime>
 #include <iostream>
+#include <stdlib.h>
+#include <stdio.h>
+
 using namespace std;
 
 
@@ -321,8 +324,40 @@ void TbTaTool::GenerateMatchedTimesAnalysis(int which_tbegin == 0)
 
 void TbTaTool::PlotOneVariableOverAllEnergies(int type_tree=0, int file_resultado_analizar =0 , char* variable1="delta_time", char* restriction_var ="delta_time != 0", char* label_hist_result1 = "Time between e39 and tbegin", int nbins = 100, float xmin=0, float xmax=200, int recursive = 1)
 {
-
 	//Open the file txt for becnhmarking
+
+	TString labeltxt = "SUPER_RESULTS_ENERGIES.txt";
+	char * myfile_name2 = root_path +type_label+labeltxt;
+	ofstream myfile_results (myfile_name2, ios::out | ios::app);
+	if (myfile_results.is_open());
+	time_t now = time(0);
+	// Convert now to tm struct for local timezone
+	tm* localtm = localtime(&now);
+	myfile_results << "The local date and time is: " << asctime(localtm) << endl;
+
+
+
+
+
+	if(file_resultado_analizar ==0)
+	{
+		myfile_results << "USING TBEGIN ALL ENERGIES" << endl;
+	}
+	else if (file_resultado_analizar ==1)
+	{
+		myfile_results << "USING KICK OFF SUBRUN ALL ENERGIES" << endl;
+	}
+	else
+	{
+		myfile_results << "OTHER ALL ENERGIES" << endl;
+	}
+
+
+	myfile_results <<  variable1 << " " << restriction_var << " " << label_hist_result1 << endl;
+	myfile_results <<  nbins <<endl;
+	myfile_results <<  xmin <<endl;
+	myfile_results <<  xmax <<endl;
+
 	//Open the root file
 	char* file_name=name_file_results[file_resultado_analizar];
 	TbTaToolAnalysis(0,file_name,type_tree);
@@ -340,10 +375,15 @@ void TbTaTool::PlotOneVariableOverAllEnergies(int type_tree=0, int file_resultad
 
 	TString canvas_file_name;
 	char *energy_polarity_label = new char[15] ;
-	char *histname = new char[20];
+	char *histname = new char[50];
 	char *entries_label = new char[12];
 	char *mean_label = new char[12];
 	char *rms_label = new char[12];
+
+	char *buffer_restriction2 = new char[100];
+	sprintf(buffer_restriction2,"%s && %s",variable1,restriction_var);
+	myfile_results << "=Global Value=" << endl;
+	myfile_results << fChainA->GetEntries(buffer_restriction2) << endl;
 
 
 		for(int n=0; n<super_limit-1;n++)
@@ -379,15 +419,16 @@ void TbTaTool::PlotOneVariableOverAllEnergies(int type_tree=0, int file_resultad
 
 			if(file_resultado_analizar ==0)
 			{
-				hist_result1[n]->SetFillColor(kGreen);
+				hist_result1[n]->SetFillColor(kCyan);
 			}
 			else
 			{
-				hist_result1[n]->SetFillColor(kRed);
+				hist_result1[n]->SetFillColor(kGreen);
 			}
 
 
 			hist_result1[n]->GetXaxis()->SetTitle("Time (seconds)");
+			//hist_result1[n]->Fit("gaus");
 			hist_result1[n]->GetYaxis()->SetTitle(labelYaxis);
 			hist_result1[n]->Draw();
 
@@ -420,10 +461,16 @@ void TbTaTool::PlotOneVariableOverAllEnergies(int type_tree=0, int file_resultad
 			//Save the Canvas
 
 
+			myfile_results << "= Energy" << aenergy[n]*apolarity[n]<< "GeV =" << endl;
+			myfile_results << entries_run  << endl;
+			myfile_results << mean_run << endl;
+			myfile_results << rms_run << endl;
+
+
 			sprintf(title_canvas,"%s for %dGeV %s", label_hist_result1, m, char_type_label);
 			if(file_resultado_analizar ==0)
 			{
-				canvas_file_name =  root_path + variable1 +"_"+ type_label+ "_"+energy_polarity_label + ".gif";
+				canvas_file_name =  root_path + variable1 +"_tbegin_"+ type_label+ "_"+energy_polarity_label + ".gif";
 			}
 			else if (file_resultado_analizar ==1)
 			{
@@ -439,14 +486,15 @@ void TbTaTool::PlotOneVariableOverAllEnergies(int type_tree=0, int file_resultad
 
 
 		}
+		myfile_results << "================== END ==================" << endl;
 
 }
 
 
-void TbTaTool::PlotStackAllEnergiesPionsTimeProfile(int r=1, int recursive = 1)
+void TbTaTool::PlotStackAllEnergiesPionsTimeProfile(int type_tree = 1, int file_resultado_analizar=2, int recursive = 1)
 {
 
-		TbTaToolAnalysis(0,name_file_results[r], r);
+		TbTaToolAnalysis(0,name_file_results[file_resultado_analizar], type_tree);
 
 
 			int nbins = 100;
@@ -569,7 +617,7 @@ void TbTaTool::PlotStackAllEnergiesPionsTimeProfile(int r=1, int recursive = 1)
 
 				 hs_spill_stack->Draw();
 				 hs_spill_stack->GetXaxis()->SetTitle("Time (seconds)");
-				 hs_spill_stack->GetYaxis()->SetTitle("Events/100");
+				 hs_spill_stack->GetYaxis()->SetTitle("Events/150");
 				 hs_spill_stack->Draw();
 
 
@@ -589,7 +637,15 @@ void TbTaTool::PlotStackAllEnergiesPionsTimeProfile(int r=1, int recursive = 1)
 
 					m= aenergy[a]*apolarity[a];
 					sprintf(energy_polarity_label, "Energy_%dGeV", m);
-					myfile_name8=  root_path + variable_stacked_spill + "_"+ type_label +"_"+energy_polarity_label + ".gif";
+
+					if(file_resultado_analizar==2)
+					{
+						myfile_name8=  root_path + variable_stacked_spill + "tbegin_"+ type_label +"_"+energy_polarity_label + ".gif";
+					}
+					else
+					{
+						myfile_name8=  root_path + variable_stacked_spill + "kickoff_"+ type_label +"_"+energy_polarity_label + ".gif";
+					}
 
 
 					sprintf(title_canvas,"Time Profile for %dGeV Pions", m);
@@ -605,6 +661,35 @@ void TbTaTool::PlotStackAllEnergiesPionsTimeProfile(int r=1, int recursive = 1)
 
 void TbTaTool::PlotOneVariableOnlyPolarity(int type_tree = 2, int file_resultado_analizar = 2 , char* variable1="mi_cycle", char* restriction_var ="mi_cycle != 0", char* label_hist_result1 = "MI's Frequency Spill", int nbins = 250, float xmin=60.2, float xmax=60.9, int recursive=1)
 {
+				TString labeltxt = "SUPER_RESULTS_Polarity.txt";
+				char * myfile_name2 = root_path +type_label+labeltxt;
+				ofstream myfile_results (myfile_name2, ios::out | ios::app);
+				if (myfile_results.is_open());
+				time_t now = time(0);
+				// Convert now to tm struct for local timezone
+				tm* localtm = localtime(&now);
+				myfile_results << "The local date and time is: " << asctime(localtm) << endl;
+
+
+
+				if(file_resultado_analizar ==0)
+				{
+					myfile_results << "USING TBEGIN POLARITY" << endl;
+				}
+				else if (file_resultado_analizar ==1)
+				{
+					myfile_results << "USING KICK OFF SUBRUN POLARITY" << endl;
+				}
+				else
+				{
+					myfile_results << "OTHER SITUATION - POLARITY" << endl;
+				}
+
+
+				myfile_results <<  variable1 << " " << restriction_var << " " << label_hist_result1 << endl;
+				myfile_results <<  nbins <<endl;
+				myfile_results <<  xmin <<endl;
+				myfile_results <<  xmax <<endl;
 
 				//Open the file txt for becnhmarking
 				//Open the root file
@@ -614,9 +699,9 @@ void TbTaTool::PlotOneVariableOnlyPolarity(int type_tree = 2, int file_resultado
 				TString canvas_file_name;
 				char *energy_polarity_label = new char[15] ;
 				char *cond_histo1 = new char[80];
-				char *histname = new char[20];
+				char *histname = new char[50];
 
-				TH1F *hist_result_[4];
+				TH1F *hist_result_polarity_[4];
 				TCanvas *canvas_variable[10];
 
 				char *label_canvas = new char[30];
@@ -641,41 +726,41 @@ void TbTaTool::PlotOneVariableOnlyPolarity(int type_tree = 2, int file_resultado
 				for(int n=0; n<=2; n++)
 				{
 					if(n==0){
-						sprintf(histname,"hist_result_%d",n); /////////////
+						sprintf(histname,"hist_result_polarity_%d",n); /////////////
 						sprintf(cond_histo1," %s",restriction_var); ///////////7
-						hist_result_[n] = new TH1F(histname,"",nbins,xmin,xmax);
+						hist_result_polarity_[n] = new TH1F(histname,"",nbins,xmin,xmax);
 						fChainA->Project(histname,variable1,cond_histo1);
 					}
 					else
 					{
-						sprintf(histname,"hist_result_%d",n); /////////////
+						sprintf(histname,"hist_result_polarity_%d",n); /////////////
 						sprintf(cond_histo1," %s && polarityb ==%d",restriction_var,apolarity2[n]); ///////////7
-						hist_result_[n] = new TH1F(histname,"",nbins,xmin,xmax);
+						hist_result_polarity_[n] = new TH1F(histname,"",nbins,xmin,xmax);
 						fChainA->Project(histname,variable1,cond_histo1);
 					}
 
 				}
 
-				hist_result_[0]->GetXaxis()->SetTitle("MI Cycle");
-				hist_result_[0]->SetTitle(title_canvas);
+				hist_result_polarity_[0]->GetXaxis()->SetTitle("MI Cycle");
+				hist_result_polarity_[0]->SetTitle(title_canvas);
 				gStyle->SetOptStat();
-				hist_result_[0]->SetFillColor(kRed);
-				hist_result_[0]->Draw();
+				hist_result_polarity_[0]->SetFillColor(kRed);
+				hist_result_polarity_[0]->Draw();
 				canvas_variable[p]->Update();
 
 
-				hist_result_[1]->SetFillColor(kCyan);
-				hist_result_[1]->Draw("SAMES");
-				hist_result_[2]->SetFillColor(kBlue);
-				hist_result_[2]->Draw("SAMES");
+				hist_result_polarity_[1]->SetFillColor(kCyan);
+				hist_result_polarity_[1]->Draw("SAMES");
+				hist_result_polarity_[2]->SetFillColor(kBlue);
+				hist_result_polarity_[2]->Draw("SAMES");
 
 				Double_t xl1=.18, yl1=0.40, xl2=xl1+.2, yl2=yl1+.325; // Set the X Axis title, value, etc
 				TLegend *leg = new TLegend(xl1,yl1,xl2,yl2); // Legend
 
 				leg->SetHeader("For differents energies");
-				leg->AddEntry(hist_result_[0],"All energies","f");
-				leg->AddEntry(hist_result_[1],"Pos","f");
-				leg->AddEntry(hist_result_[2],"Neg","f");
+				leg->AddEntry(hist_result_polarity_[0],"All energies","f");
+				leg->AddEntry(hist_result_polarity_[1],"Pos","f");
+				leg->AddEntry(hist_result_polarity_[2],"Neg","f");
 				leg->Draw();
 
 				char *condition_entries = new char[150]
@@ -694,15 +779,15 @@ void TbTaTool::PlotOneVariableOnlyPolarity(int type_tree = 2, int file_resultado
 					TText *text = ptstats->AddText("All energies");
 					text->SetTextSize(0.0068);
 					char *entries_label = new char[12];
-					Double_t entries_run =  hist_result_[0]->GetEntries();
+					Double_t entries_run =  hist_result_polarity_[0]->GetEntries();
 					sprintf(entries_label," Entries %d", entries_run);
 					text = ptstats->AddText(entries_label);
 					char *mean_label = new char[12];
-					Float_t mean_run =  hist_result_[0]->GetMean();
+					Float_t mean_run =  hist_result_polarity_[0]->GetMean();
 					sprintf(mean_label," Mean %0.2f", mean_run);
 					text = ptstats->AddText(mean_label);
 					char *rms_label = new char[12];
-					Float_t rms_run =  hist_result_[0]->GetRMS();
+					Float_t rms_run =  hist_result_polarity_[0]->GetRMS();
 					sprintf(rms_label," RMS %0.3f", rms_run);
 					text = ptstats->AddText(rms_label);
 					ptstats->SetOptStat(1111);
@@ -714,6 +799,7 @@ void TbTaTool::PlotOneVariableOnlyPolarity(int type_tree = 2, int file_resultado
 
 				//T.DrawTextNDC(.5,.95,title_canvas);
 				canvas_variable[p]->SaveAs(canvas_file_name);
+				myfile_results << "================== END ==================" << endl;
 
 
 	}
@@ -723,9 +809,9 @@ void TbTaTool::PlotOneVariableAllEnergiesStacked(int type_tree=2, int file_resul
 {
 
 					TbTaToolAnalysis(0,name_file_results[file_resultado_analizar], type_tree);
-					TH1F *hist_result_[20];
+					TH1F *hist_result_stacked_[40];
 					char *cond_histo1 = new char[80];
-					char *histname = new char[20];
+					char *histname = new char[50];
 					char *title_h = new char[80];
 					char *labelYaxis = new char[60];
 					char *title_canvas = new char[80];
@@ -743,7 +829,7 @@ void TbTaTool::PlotOneVariableAllEnergiesStacked(int type_tree=2, int file_resul
 					canvas_variable[p]->Divide(1);
 					canvas_variable[p]->cd(1);
 
-
+					char buffer [33];
 					sprintf(labelYaxis,"Events/%d",nbins);
 
 					for(int index_energy=0; index_energy < super_limit2; index_energy++)
@@ -751,89 +837,97 @@ void TbTaTool::PlotOneVariableAllEnergiesStacked(int type_tree=2, int file_resul
 						cout << index_energy << "=" <<aenergy[index_energy]*apolarity[index_energy] <<"GeV ="<< endl;
 						if(index_energy ==0)
 						{
-							sprintf(histname,"hist_result_%d",index_energy);
+							sprintf(histname,"hist_result_stacked_%d",index_energy);
 							sprintf(cond_histo1," %s",restriction_var); ///////////
 							sprintf(title_h,"%s for all energies",label_hist_result1);
-							hist_result_[index_energy] = new TH1F(histname,title_h,nbins,xmin,xmax);
+							hist_result_stacked_[index_energy] = new TH1F(histname,title_h,nbins,xmin,xmax);
 							fChainA->Project(histname,variable1,cond_histo1);
-							hist_result_[index_energy]->Draw();
-							hist_result_[index_energy]->GetXaxis()->SetTitle("Time (seconds)");
-							hist_result_[index_energy]->Draw();
+							hist_result_stacked_[index_energy]->Draw();
+							hist_result_stacked_[index_energy]->GetXaxis()->SetTitle("Time (seconds)");
+							hist_result_stacked_[index_energy]->Draw();
 
 						}
 						else
 						{
-							sprintf(histname,"hist_result_%d",index_energy);
+							sprintf(histname,"hist_result_stacked_%d",index_energy);
 							sprintf(cond_histo1," %s && energyb ==%d",restriction_var,aenergy[index_energy]); ///////////
 							sprintf(title_h,"%s for energies %dGeV",label_hist_result1, aenergy[index_energy]);
-							hist_result_[index_energy] = new TH1F(histname,title_h,nbins,xmin,xmax);
+							hist_result_stacked_[index_energy] = new TH1F(histname,title_h,nbins,xmin,xmax);
 							fChainA->Project(histname,variable1,cond_histo1);
 						}
 					}
 
-						hist_result_[0]->Draw();
-						hist_result_[0]->GetXaxis()->SetTitle("Time (seconds)");
-						hist_result_[0]->Draw();
-						hist_result_[0]->GetYaxis()->SetTitle(labelYaxis);
+						hist_result_stacked_[0]->Draw();
+						hist_result_stacked_[0]->GetXaxis()->SetTitle("Time (seconds)");
+						hist_result_stacked_[0]->Draw();
+						hist_result_stacked_[0]->GetYaxis()->SetTitle(labelYaxis);
 					  //hist_result->GetXaxis()->SetLimits(0, 5);
 					  //hist_result_[0]->SetTitle("MI Cycle for Run 2 Pions");
 					  //hist_result->SetMarkerColor(2);
 					  //hist_result->SetMarkerStyle(2);
 					  gStyle->SetOptStat();
-					  hist_result_[0]->SetFillColor(kRed);
-					  hist_result_[0]->Draw();
+					  hist_result_stacked_[0]->SetFillColor(kRed);
+					  hist_result_stacked_[0]->Draw();
 					  canvas_variable[p]->Update();
 
 
 					  //Int_t ci3, ci4, ci5, ci6, ci7, ci8, ci9, ci10, ci11;   // for color index setting
 					  //ci2 = TColor::GetColor(2);
 					  //hist_numb_spill_pions_2->SetLineColor(ci2);
-					  hist_result_[1]->SetFillColor(kCyan);
-					  hist_result_[1]->Draw("SAMES");
+					  hist_result_stacked_[1]->SetFillColor(kCyan);
+					  hist_result_stacked_[1]->Draw("SAMES");
 
 					  //hist_numb_spill_pions_4->SetFillColor(kViolet);
 					  //hist_spill_number_date_3->SetLineColor(ci4);
 					  //ci4 = TColor::GetColor(4);
-					  hist_result_[2]->SetFillColor(kBlue);
-					  hist_result_[2]->Draw("SAMES");
+					  hist_result_stacked_[2]->SetFillColor(kBlue);
+					  hist_result_stacked_[2]->Draw("SAMES");
 
 					  //hist_numb_spill_pions_5->SetFillColor(kBlue);
 					  //hist_spill_number_date_4->SetLineColor(ci5);
 					  //ci5 = TColor::GetColor(5);
 
-					  hist_result_[3]->SetFillColor(kYellow);
-					  hist_result_[3]->Draw("SAMES");
+					  hist_result_stacked_[3]->SetFillColor(kYellow);
+					  hist_result_stacked_[3]->Draw("SAMES");
 
 					  //hist_numb_spill_pions_6->SetFillColor(kAzure);
 					  //hist_spill_number_date_5->SetLineColor(ci6);
 					  //ci6 = TColor::GetColor(7);
 
-					  hist_result_[4]->SetFillColor(kOrange);
-					  hist_result_[4]->Draw("SAMES");
+					  hist_result_stacked_[4]->SetFillColor(kOrange);
+					  hist_result_stacked_[4]->Draw("SAMES");
 
 					  //hist_numb_spill_pions_7->SetFillColor(kCyan);
 					  //hist_spill_number_date_6->SetLineColor(ci7);
 					  //ci7 = TColor::GetColor(8);
-					  hist_result_[5]->SetFillColor(kGreen);
-					  hist_result_[5]->Draw("SAMES");
+					  hist_result_stacked_[5]->SetFillColor(kGreen);
+					  hist_result_stacked_[5]->Draw("SAMES");
 
 
-					  hist_result_[6]->SetFillColor(kViolet);
-					  hist_result_[6]->Draw("SAMES");
+					  hist_result_stacked_[6]->SetFillColor(kViolet);
+					  hist_result_stacked_[6]->Draw("SAMES");
 
 
 
-					 Double_t xl1=.18, yl1=0.40, xl2=xl1+.2, yl2=yl1+.325; // Set the X Axis title, value, etc
+
+					 if( variable1="delta_time" )
+					 {
+						 Double_t xl1=.78, yl1=0.40, xl2=xl1+.2, yl2=yl1+.325; // Set the X Axis title, value, etc
+					 }
+					 else
+					 {
+						 Double_t xl1=.18, yl1=0.40, xl2=xl1+.2, yl2=yl1+.325;
+					 }
 					 // x position, y position, x ancho, y ancho
 					 TLegend *leg = new TLegend(xl1,yl1,xl2,yl2); // Legend
 					 leg->SetHeader("For differents energies");
-					 leg->AddEntry(hist_result_[0],"All energies","f");
-					 leg->AddEntry(hist_result_[1],"8GeV","f");
-					 leg->AddEntry(hist_result_[2],"6GeV","f");
-					 leg->AddEntry(hist_result_[3],"4GeV","f");
-					 leg->AddEntry(hist_result_[4],"9GeV","f");
-					 leg->AddEntry(hist_result_[5],"10GeV","f");
-					 leg->AddEntry(hist_result_[6],"16GeV","f");
+					 leg->AddEntry(hist_result_stacked_[0],"All energies","f");
+					 leg->AddEntry(hist_result_stacked_[1],"8GeV","f");
+					 leg->AddEntry(hist_result_stacked_[2],"6GeV","f");
+					 leg->AddEntry(hist_result_stacked_[3],"4GeV","f");
+					 leg->AddEntry(hist_result_stacked_[4],"9GeV","f");
+					 leg->AddEntry(hist_result_stacked_[5],"10GeV","f");
+					 leg->AddEntry(hist_result_stacked_[6],"16GeV","f");
 					 leg->Draw();
 
 
@@ -843,18 +937,18 @@ void TbTaTool::PlotOneVariableAllEnergiesStacked(int type_tree=2, int file_resul
 							ptstats->SetFillColor(0);
 							ptstats->SetTextAlign(12);
 							ptstats->SetTextFont(42);
-							TText *text = ptstats->AddText("MI Cycle");
+							TText *text = ptstats->AddText("All energies");
 							text->SetTextSize(0.0068);
 							char *entries_label = new char[12];
-							Double_t entries_run =  hist_result_[0]->GetEntries();
+							Double_t entries_run =  hist_result_stacked_[0]->GetEntries();
 							sprintf(entries_label," Entries %d", entries_run);
 							text = ptstats->AddText(entries_label);
 							char *mean_label = new char[12];
-							Float_t mean_run =  hist_result_[0]->GetMean();
+							Float_t mean_run =  hist_result_stacked_[0]->GetMean();
 							sprintf(mean_label," Mean %0.2f", mean_run);
 							text = ptstats->AddText(mean_label);
 							char *rms_label = new char[12];
-							Float_t rms_run =  hist_result_[0]->GetRMS();
+							Float_t rms_run =  hist_result_stacked_[0]->GetRMS();
 							sprintf(rms_label," RMS %0.3f", rms_run);
 							text = ptstats->AddText(rms_label);
 							ptstats->SetOptStat(1111);
@@ -885,61 +979,156 @@ void TbTaTool::PlotOneVariableAllEnergiesStacked(int type_tree=2, int file_resul
 
 
 
-void TbTaTool::GetValuesHistograms(int type_tree =0 , int file_resultado_analizar=0, char* variable1="delta_time", char* restriction_var ="delta_time != 0" )
-{
+		void TbTaTool::PlotOneVariableNoConditions(int type_tree=0, int file_resultado_analizar =0 , char* variable1="delta_time", char* restriction_var ="delta_time != 0", char* label_hist_result1 = "Time between e39 and tbegin", int nbins = 100, float xmin=0, float xmax=80, int recursive = 1)
+		{
+
+					//Open the file txt for becnhmarking
+
+					TString labeltxt = "SUPER_RESULTS_ENERGIES.txt";
+					char * myfile_name2 = root_path +type_label+labeltxt;
+					ofstream myfile_results (myfile_name2, ios::out | ios::app);
+					if (myfile_results.is_open());
+					time_t now = time(0);
+					// Convert now to tm struct for local timezone
+					tm* localtm = localtime(&now);
+					myfile_results << "The local date and time is: " << asctime(localtm) << endl;
 
 
-				//Open the file txt for becnhmarking
-				//Open the root file
-				char* file_name=name_file_results[file_resultado_analizar];
-				TbTaToolAnalysis(0,file_name,type_tree);
-			  //Limits of the histogram
-			  //Creation of Histogram
-
-				int m;
-				//File with data
-				char buffer [50];
-				TString temp1 = "entries_excluded_cut_2.txt";
-				char * myfile_name = root_path + variable1 +"_"+temp1 ;
-				ofstream myfile (myfile_name, ios::out | ios::app);
-				if (myfile.is_open());
-				myfile <<"Values excluded by the cuts" << variable1 <<"with differents limits." << endl;
-
-
-				char *condition_entries = new char[150];
-				char *buffer_restriction = new char[100];
-
-				int numero = 9;
-				int k =0;
-				Double_t limit_1, limit_2;
-
-				while(numero == 9)
-				{
-
-					cout << "Insert the bottom limit: ";
-					cin >> limit_1;
-					cout << "Insert the upper limit: ";
-					cin >> limit_2;
-					sprintf(buffer_restriction,"%s && %s > %d && %s < %d",restriction_var, variable1, limit_1, variable1 ,limit_2);
-
-
-					for(int n=0; n<super_limit-1;n++)
+					if(file_resultado_analizar ==0)
 					{
-
-						sprintf(condition_entries,"%s && %s && energyb ==%d && polarityb ==%d",variable1, buffer_restriction,aenergy[n],apolarity[n]);
-						myfile << "E: " << aenergy[n]*apolarity[n] << "   ";
-						myfile << fChainA->GetEntries(condition_entries) << endl;
-
-
+						myfile_results << "USING TBEGIN NO CONDITIONS" << endl;
+					}
+					else if (file_resultado_analizar ==1)
+					{
+						myfile_results << "USING KICK OFF SUBRUN NO CONDITIONS" << endl;
+					}
+					else
+					{
+						myfile_results << "OTHER NO CONDITIONS" << endl;
 					}
 
-					cout <<  "Do you want to continue?, press 9: ";
-					cin >> numero;
+
+					myfile_results <<  variable1 << " " << restriction_var << " " << label_hist_result1 << endl;
+					myfile_results <<  nbins <<endl;
+					myfile_results <<  xmin <<endl;
+					myfile_results <<  xmax <<endl;
+
+					//Open the root file
+					char* file_name=name_file_results[file_resultado_analizar];
+					TbTaToolAnalysis(0,file_name,type_tree);
+				  //Limits of the histogram
+				  //Creation of Histogram
+					int p;
+
+					char *labelYaxis = new char[60];
+					char *title_canvas = new char[80];
+
+					TString canvas_file_name;
+					char *energy_polarity_label = "All_energies" ;
+					char *histname = new char[50];
+					char *entries_label = new char[12];
+					char *mean_label = new char[12];
+					char *rms_label = new char[12];
+
+					TCanvas *canvas_result_nocond;
+					TH1F *hist_result_nocondition;
+
+					char *buffer_restriction2 = new char[100];
+					sprintf(buffer_restriction2,"%s && %s",variable1,restriction_var);
+					myfile_results << "=Global Value=" << endl;
+					myfile_results << fChainA->GetEntries(buffer_restriction2) << endl;
+
+
+									if(recursive ==1){p=n;}
+									else if(recursive ==2){p=20;}
+									else if(recursive ==3){p=30;}
+									else if(recursive ==4){p=40;}
+									else if(recursive ==5){p=50;}
+									else if(recursive ==6){p=60;}
+
+
+									canvas_result_nocond = new TCanvas("canvas_result_nocond","canvas_result_nocond",10,10,600,400);
+									TText T; T.SetTextFont(42); T.SetTextAlign(21);
+									canvas_result_nocond->Divide(1);
+									canvas_result_nocond->cd(1);
+
+									//Project and plot. histname is the name of the histogram
+									sprintf(labelYaxis,"Events/%d",nbins);
+									hist_result_nocondition = new TH1F(histname,"",nbins,xmin,xmax);
+
+
+									fChainA->Project(histname,variable1,restriction_var);
+									hist_result_nocondition->Draw();
+
+									if(file_resultado_analizar ==0)
+									{
+										hist_result_nocondition->SetFillColor(kGreen);
+									}
+									else
+									{
+										hist_result_nocondition->SetFillColor(kYellow);
+									}
+
+									hist_result_nocondition->GetXaxis()->SetTitle("Time (seconds)");
+									//hist_result_nocondition->Fit("gaus");
+									hist_result_nocondition->GetYaxis()->SetTitle(labelYaxis);
+									hist_result_nocondition->Draw();
+
+
+
+									TPaveStats *ptstats = new TPaveStats(0.78,0.775,0.98,0.935,"brNDC");
+										ptstats->SetName("stats");
+										ptstats->SetBorderSize(1);
+										ptstats->SetFillColor(0);
+										ptstats->SetTextAlign(12);
+										ptstats->SetTextFont(42);
+										TText *text = ptstats->AddText("All energies"); //Name
+										text->SetTextSize(0.0068);
+
+										Double_t entries_run =  hist_result_nocondition->GetEntries();
+										sprintf(entries_label," Entries %d", entries_run);//<=========================
+										text = ptstats->AddText(entries_label);
+
+										Float_t mean_run =  hist_result_nocondition->GetMean();//<=========================
+										sprintf(mean_label," Mean %0.2f", mean_run);
+										text = ptstats->AddText(mean_label);
+
+										Float_t rms_run =  hist_result_nocondition->GetRMS(); //<=========================
+										sprintf(rms_label," RMS %0.3f", rms_run);
+										text = ptstats->AddText(rms_label);
+										ptstats->SetOptStat(1111);
+										ptstats->SetOptFit(0);
+									ptstats->Draw();
+
+									//Save the Canvas
+
+									myfile_results << "= No Condition =" << endl;
+									myfile_results << entries_run  << endl;
+									myfile_results << mean_run << endl;
+									myfile_results << rms_run << endl;
+
+									sprintf(title_canvas,"%s all events for %s", label_hist_result1,char_type_label);
+									if(file_resultado_analizar ==0)
+									{
+										canvas_file_name =  root_path + variable1 +"_"+ type_label+ "_"+"All_energies_fitted_no_condition" + ".gif";
+									}
+									else if (file_resultado_analizar ==1)
+									{
+										canvas_file_name =  root_path + variable1 +"_kickoff_"+ type_label+ "_"+"All_energies_fitted_no_condition" + ".gif";
+									}
+									else
+									{
+										canvas_file_name =  root_path + variable1 +"_"+ type_label+ "_"+"All_energies_fitted_no_condition" + ".gif";
+									}
+
+									T.DrawTextNDC(.5,.95,title_canvas);
+									canvas_result_nocond->SaveAs(canvas_file_name);
+
+						myfile_results << "================== END ==================" << endl;
+
 				}
 
-				myfile <<"####"<< endl;
 
-		}
 
 
 
@@ -970,10 +1159,13 @@ void TbTaTool::VariableArrayInsideSubRun(char* name_file, TTree *tree, Long64_t 
 
 
 
-void TbTaTool::GenerateDataPions()
+void TbTaTool::GenerateDataPions(int which_tbegin == 0)
 {
+				if(which_tbegin == 0) {TString labelTP ="_time_profile_spills_tbegin.root";}
+				else {TString labelTP ="_time_profile_spills_kickoff.root";}
 
-		    TString labelTP ="_time_profile_spills.root";
+
+
 			  char * name_results = root_path + type_label + labelTP;
 			  TFile f_spill(name_results,"RECREATE");
 			  TTree *tree_spill = new TTree("tree_spill","Tree Spill");
@@ -990,7 +1182,12 @@ void TbTaTool::GenerateDataPions()
 			  TBranch *b_polarityb = tree_spill->Branch("polarityb", &polarityb, "polarityb/I" );
 				TBranch *b_file = tree_spill->Branch("file", &file, "file/I");
 
-				TString labelSD ="spill_duration.root";
+
+
+				if(which_tbegin == 0) {TString labelSD ="_spill_duration_tbegin.root";}
+				else {TString labelSD ="_spill_duration_kickoff.root";}
+
+
 				char * name_file_global = root_path + type_label + labelSD;
 
 				TFile f_global(name_file_global,"RECREATE");
@@ -1016,12 +1213,11 @@ void TbTaTool::GenerateDataPions()
 				Double_t Time_spill, Time_spill_1, Time_spill_2, Time_spill_3, Time_spill_4, Time_spill_5, Time_spill_6;
 				Double_t Time_begin_spill, Time_begin_spill_1, Time_begin_spill_2, Time_begin_spill_3, Time_begin_spill_4, Time_begin_spill_5, Time_begin_spill_6;
 				Double_t t_o_spill_6, t_o_spill_5, t_o_spill_4, t_o_spill_3, t_o_spill_2, t_o_spill_1;
-				Float_t interval_between_spills = 60.53333333;
 
 				Double_t TimeBeginSpill_[20];
 				Double_t DidTBeginWasCalculated_[20];
 				Double_t DidAbsoluteTBeginWasRecalculated_[20];
-
+				Double_t time_subrun;
 
 
 
@@ -1069,8 +1265,17 @@ void TbTaTool::GenerateDataPions()
 								 				  Time_begin_spill_3 = -404; Time_begin_spill_4 = -404;
 								 				  Time_begin_spill_5 = -404; Time_begin_spill_6 = -404;
 
+													if(which_tbegin == 0)
+													{
+														t_begin[i] = MatchTwoPoints(0,BeginTimeOneSubRun(name_file[i]));
+													}
+													else
+													{
+														time_subrun = KickOffOneSubRun(name_file[i],nentries);
+														if(time_subrun <0){time_subrun= BeginTimeOneSubRun(name_file[i]);}
+														t_begin[i] = MatchTwoPoints(0,time_subrun);
+													}
 
-								t_begin[i] = MatchTwoPoints(0,BeginTimeOneSubRun(name_file[i]));
 
 
 									// ================= LOOP 1 : Begin Time for the Spill_number == 1 =================== //
@@ -1387,8 +1592,8 @@ void TbTaTool::GenerateDataPions()
 
 											 //Conditions for Spill has actual values
 
-											 Time_spill_1b = -1; Time_spill_2b = -1; Time_spill_3b = -1;
-											 Time_spill_4b = -1; Time_spill_5b = -1; Time_spill_6b = -1;
+											 Time_spill_1 = -1; Time_spill_2 = -1; Time_spill_3 = -1;
+											 Time_spill_4 = -1; Time_spill_5 = -1; Time_spill_6 = -1;
 											 mi_cycle = 0;
 
 										 if (In_spill > 0.5 )              {
@@ -1566,84 +1771,159 @@ void TbTaTool::GenerateDataPions()
 		}
 
 
+
 void TbTaTool::Main()
 {
 
-	//1. set the  values of
+				//1. set the  values of
 
-	//TString root_path="/home/gsalazarq/Dropbox/min_conocimiento/e45.MINERvA/tools/final_tools/TbTaTool/ThesisVersionTool/Results_Pions/";
-	//TString type_label = "PionsRun2";
-	//char*  char_type_label = "Pions (Run2)";
-	//const int super_limit = 12; //the numbes of entries in the arrays of energy and polarity
-	//const int super_limit2 = 7; //the numbes of entries in the arrays of energy and polarity
-	//const int value_number_spills = 6; //the numbes of entries in the arrays of energy and polarity
-	//const Double_t ref_e39 = 1429819209.67;
-	//const Double_t ref_tb = 1429820288.47;
-	//const int super_limit = 12; //the numbes of entries in the arrays of energy and polarity
 
-	//2.Set the path of the files in name_file[1000] = //Good paths for pions or electrons
+				//TString root_path="/home/gsalazarq/Dropbox/min_conocimiento/e45.MINERvA/tools/final_tools/TbTaTool/ThesisVersionTool/Results_Pions/";
+				//TString type_label = "PionsRun2";
+				//char*  char_type_label = "Pions (Run2)";
+				//const int super_limit = 12; //the numbes of entries in the arrays of energy and polarity
+				//const int super_limit2 = 7; //the numbes of entries in the arrays of energy and polarity
+				//const int value_number_spills = 6; //the numbes of entries in the arrays of energy and polarity
+				//const Double_t ref_e39 = 1429819209.67;
+				//const Double_t ref_tb = 1429820288.47;
+				//const int super_limit = 12; //the numbes of entries in the arrays of energy and polarity
 
-	//3.Create the tbegin in order to get the interval of the e39 timestamp
+				//2.Set the path of the files in name_file[1000] = //Good paths for pions or electrons
 
-	//BeginTimeForRun(aindex[0],aindex[super_limit-1],0);
-	//BeginTimeForRun(aindex[0],aindex[super_limit-1],1);
-	int numero = 0;
-	cout << "Is the e39 data already loaded in the TbTaTool_files.h? if yes? press 1; otherwise 0." << endl;
-	cin >> numero;
-	if( numero == 1)
-	{
-			//4.Generate time interval analysis
-			//GenerateMatchedTimesAnalysis(0);  //considering tbegin as the beginning of the root
-			//GenerateMatchedTimesAnalysis(1);  //considering tbegin as the kickoff of the run
+				//3.Create the tbegin in order to get the interval of the e39 timestamp
+						int numero1=0;
+						cout << "Do you want to produce the kickoff and tbegin values? \n If yes, press 1: ";
+						cin >> numero1;
+						if(numero1 == 1)
+						 {
 
-			//5. Plotting the Delta_time
-			/*int i_bin, i_min, i_max;
-			cout << "Introduce numbers of bin: ";
-			cin >> i_bin;
-			cout << "\n Introduce min range: ";
-			cin >> i_min;
-			cout << "\nIntroduce max range: ";
-			cin >> i_max;*/
-			/*
-			int i_bin = 250;
-			char restriction_var1[30];
-			sprintf(restriction_var1,"delta_time != %d", i_bin);
-			GetValuesHistograms(0,0,"delta_time",restriction_var1);]
-			*/
+							 BeginTimeForRun(aindex[0],aindex[super_limit-1],0);
+							 BeginTimeForRun(aindex[0],aindex[super_limit-1],1);
+						 }
+						 else
+						 {
+						 	cout <<"... Begining Times already calculated." << endl;
+						 }
+						 //=======================
 
-			PlotOneVariableOverAllEnergies(0,0,"delta_time","delta_time != 0","Time between e39 and tbegin subrun",250,0,100,1);
-			PlotOneVariableAllEnergiesStacked(0,0,"delta_time","delta_time!= 0", "Time between e39 and tbegin subrun", 250,0,100,1);
-			/*int i_bin, i_min, i_max;
-			cout << "Introduce numbers of bin: ";
-			cin >> i_bin;
-			cout << "\n Introduce min range: ";
-			cin >> i_min;
-			cout << "\nIntroduce max range: ";
-			cin >> i_max;*/
+				 	 	cout << "Is the e39 data already loaded in the TbTaTool_files.h? \n If yes? press 1; otherwise 0: ";
+						int numero = 0;
+				 	 	cin >> numero;
 
-			PlotOneVariableOverAllEnergies(0,1,"delta_time","delta_time != 0","Time between e39 and kickoff subrun",250,0,1,2);
-			PlotOneVariableAllEnergiesStacked(0,1,"delta_time","delta_time != 0","Time between e39 and kickoff subrun",250,0,1,2);
+				 	 	if( numero == 1)
+				 	 	{
+							cout <<"Do you want to generate the Matched Time Analysis? \n If yes, press 1, otherwise 0: ";
+							int numero2=0;
+							cin >> numero2;
 
-			//GetValuesHistograms("delta_time","delta_time != 0",0);
-			//PlotOneVariableOverAllEnergies(1,"delta_time","delta_time != 0","Time between e39 and tbegin",100,0,200);
+							if(numero2 ==1)
+							{
+										GenerateMatchedTimesAnalysis(0);  //considering tbegin as the beginning of the root
+										GenerateMatchedTimesAnalysis(1);  //considering tbegin as the kickoff of the run
+										cout <<"Matched Times already done. \n Generating Time Profile \n" ;
+										GenerateDataPions(1);
+										cout <<"Do you want to Plot? \n If yes, press 1, otherwise 0: ";
+										int numero3;
+										cin >> numero3;
+										if(numero3 == 1)
+											{
+												GeneralPlots();
+											}
+											else
+											{
+												cout << "Adios!" << endl;
+											}
 
-			//Look into the txt files produced
-			//TString variable1 = "tbegin_spill.txt";
-			//TString variable1 = "kick_off_spill.txt";
+							 }
+							 else
+							 {
+								 	cout <<"Matched Times already done. \n Generating Time Profile \n" ;
+									GenerateDataPions(1);
+									cout <<"Do you want to Plot? \n If yes, press 1, otherwise 0: ";
+									int numero3;
+									cin >> numero3;
+									if(numero3 == 1)
+										{
+											GeneralPlots();
+										}
+										else
+										{
+											cout << "Adios!" << endl;
+										}
+							 }
+						}
+						else
+						{
+							cout << "Put the values in the .h file";
+							break;
+						}
+		}
 
-			//4. Make the conversion for the e39times values
-			//put the values in Double_t e39times[10000] considering the best option (beginning and kickoff)
 
-			//Generate Time Profile and Spill Duration
-			//GenerateDataPions()
+void TbTaTool::GeneralPlots()
+{
 
-			//
 
-	}
-	else if()
-	{
-		cout << "This is the end ... my friend ... the end ..." << endl;
-		break;
-	}
 
-}
+
+				//5. Plotting the Delta_time
+			  /*int i_bin, i_min, i_max;
+			  cout << "Introduce numbers of bin: ";
+			  cin >> i_bin;
+			  cout << "\n Introduce min range: ";
+			  cin >> i_min;
+			  cout << "\nIntroduce max range: ";
+			  cin >> i_max;*/
+			  /*
+			  int i_bin = 250;
+			  char restriction_var1[30];
+			  sprintf(restriction_var1,"delta_time != %d", i_bin);
+			  GetValuesHistograms(0,0,"delta_time",restriction_var1);]
+			  */
+
+			  //PlotOneVariableOverAllEnergies(0,0,"delta_time","delta_time != 0","Time between e39 and tbegin subrun",100,0,1,1); THERE IS NOT NEED OF THIS
+			  //PlotOneVariableAllEnergiesStacked(0,0,"delta_time","delta_time!= 0", "Time between e39 and tbegin subrun", 100,0,1,1); THERE IS NOT NEED OF THIS
+
+			  /*int i_bin, i_min, i_max;
+			  cout << "Introduce numbers of bin: ";
+			  cin >> i_bin;
+			  cout << "\n Introduce min range: ";
+			  cin >> i_min;
+			  cout << "\nIntroduce max range: ";
+			  cin >> i_max;*/
+
+				int nbins1;
+				nbins1 = 150;
+
+			  PlotOneVariableOverAllEnergies(0,0,"delta_time","delta_time != 0","Time between e39 and tbegin subrun",nbins1,-0.5,80,1);
+			  PlotOneVariableAllEnergiesStacked(0,0,"delta_time","delta_time != 0","Time between e39 and tbegin subrun",nbins1,-0.5,80,1);
+
+				PlotOneVariableOverAllEnergies(0,1,"delta_time","delta_time != 0","Time between e39 and kickoff subrun",nbins1,-0.5,0.8,2);
+			  PlotOneVariableAllEnergiesStacked(0,1,"delta_time","delta_time != 0 && delta_time < 10","Time between e39 and kickoff subrun",nbins1,-0.5, 0.8 ,2);
+
+
+				int nbins2, xmin2, xmax2;
+				nbins2 = 250;
+				xmin2 = 60;
+				xmax2 = 61.5;
+			  PlotOneVariableOverAllEnergies(2,5,"mi_cycle","mi_cycle != 0","MI's Frequency Spill",nbins2,xmin2,xmax2, 3);
+			  PlotOneVariableAllEnergiesStacked(2,5,"mi_cycle","mi_cycle != 0","MI's Frequency Spill",nbins2,xmin2,xmax2, 3);
+			  PlotOneVariableOnlyPolarity(2,5,"mi_cycle","mi_cycle != 0","MI's Frequency Spill",nbins2,xmin2,xmax2, 3);
+				PlotOneVariableNoConditions(2,5,"mi_cycle","mi_cycle != 0","MI's Frequency Spill",nbins2,xmin2,xmax2, 3);
+
+
+				int nbins3, xmin3, xmax3;
+				nbins3 = 250;
+				xmin3 = 2.3;
+				xmax3 = 5;
+
+			  PlotOneVariableOverAllEnergies(2,5,"duration_spill","duration_spill != 0","Spill MI's Cycle",nbins3,xmin3 ,xmax3 ,  4);
+			  PlotOneVariableAllEnergiesStacked(2,5,"duration_spill","duration_spill != 0","Spill MI's Cycle",nbins3,2.8 ,5.2 ,  4);
+			  PlotOneVariableOnlyPolarity(2,5,"duration_spill","duration_spill != 0","Spill MI's Cycle",nbins3,xmin3 ,xmax3 ,  4);
+				PlotOneVariableNoConditions(2,5,"duration_spill","duration_spill != 0","Spill MI's Cycle",nbins3,xmin3 ,xmax3 ,  4);
+			  //PlotStackAllEnergiesPionsTimeProfile(1, 2, 1); THERE IS NO NEED OF TBEGIN
+			  PlotStackAllEnergiesPionsTimeProfile(1, 3, 1);
+
+			  //
+
+		}
