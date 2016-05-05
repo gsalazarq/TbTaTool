@@ -474,7 +474,7 @@ void TbTaTool::PlotOneVariableOverAllEnergies(int type_tree=0, int file_resultad
 					sprintf(title_canvas,"%s for %dGeV %s", label_hist_result1, m, char_type_label);
 					if(file_resultado_analizar ==0)
 					{
-						canvas_file_name =  root_path + variable1 +"_"+ type_label+ "_"+energy_polarity_label + ".gif";
+						canvas_file_name =  root_path + variable1 +"_tbegin_"+ type_label+ "_"+energy_polarity_label + ".gif";
 					}
 					else if (file_resultado_analizar ==1)
 					{
@@ -997,7 +997,15 @@ void TbTaTool::PlotOneVariableAllEnergiesStacked(int type_tree=2, int file_resul
 					  hist_result_stacked_[5]->Draw("SAMES");
 
 
-					 Double_t xl1=.18, yl1=0.40, xl2=xl1+.2, yl2=yl1+.325; // Set the X Axis title, value, etc
+						if( variable1="delta_time" )
+						{
+						Double_t xl1=.78, yl1=0.40, xl2=xl1+.2, yl2=yl1+.325; // Set the X Axis title, value, etc
+						}
+						else
+						{
+						Double_t xl1=.18, yl1=0.40, xl2=xl1+.2, yl2=yl1+.325;
+						}
+
 					 // x position, y position, x ancho, y ancho
 					 TLegend *leg = new TLegend(xl1,yl1,xl2,yl2); // Legend
 					 leg->SetHeader("For differents energies");
@@ -1016,7 +1024,7 @@ void TbTaTool::PlotOneVariableAllEnergiesStacked(int type_tree=2, int file_resul
 							ptstats->SetFillColor(0);
 							ptstats->SetTextAlign(12);
 							ptstats->SetTextFont(42);
-							TText *text = ptstats->AddText("MI Cycle");
+							TText *text = ptstats->AddText("All energies");
 							text->SetTextSize(0.0068);
 							char *entries_label = new char[12];
 							Double_t entries_run =  hist_result_stacked_[0]->GetEntries();
@@ -2607,8 +2615,12 @@ void TbTaTool::GeneralPlots()
 	  cout << "\nIntroduce max range: ";
 	  cin >> i_max;*/
 
-	  PlotOneVariableOverAllEnergies(0,1,"delta_time","delta_time != 0","Time between e39 and kickoff subrun",150,0.1,0.8,2);
+	  PlotOneVariableOverAllEnergies(0,0,"delta_time","delta_time != 0","Time between e39 and tbegin subrun",150,0.1,0.8,2);
+	  PlotOneVariableAllEnergiesStacked(0,0,"delta_time","delta_time != 0","Time between e39 and tbegin subrun",150,0.1,0.8,2);
+
+		PlotOneVariableOverAllEnergies(0,1,"delta_time","delta_time != 0","Time between e39 and kickoff subrun",150,0.1,0.8,2);
 	  PlotOneVariableAllEnergiesStacked(0,1,"delta_time","delta_time != 0","Time between e39 and kickoff subrun",150,0.1,0.8,2);
+
 
 	  //6. Generate Time Profile and Spill Duration
 	  //GenerateDataPions(0); THERE IS NO NEED TO USE TBEGIN
